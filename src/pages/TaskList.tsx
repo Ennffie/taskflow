@@ -2,19 +2,14 @@ import { useState } from 'react';
 import { Search, Filter, Plus, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { TaskStatus, TaskPriority } from '../types';
-import {
-  mockTasks,
-  STATUS_CONFIG,
-  PRIORITY_CONFIG,
-} from '../types';
+import { mockTasks, STATUS_CONFIG, PRIORITY_CONFIG } from '../types';
 
 export function TaskList() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
-  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
-  const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<'status' | 'priority' | null>(null);
 
   const filtered = mockTasks.filter((t) => {
     if (search && !t.title.toLowerCase().includes(search.toLowerCase())) return false;
@@ -24,92 +19,102 @@ export function TaskList() {
   });
 
   return (
-    <div className="space-y-4 md:space-y-6 pb-20 md:pb-0">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="pb-24 md:pb-0">
+      {/* Section Header */}
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-xl md:text-2xl font-bold">All Tasks</h2>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-            {filtered.length} task{filtered.length !== 1 ? 's' : ''} found
+          <h2 className="text-2xl md:text-3xl font-bold" style={{ color: 'var(--text)' }}>All Tasks</h2>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+            {filtered.length} task{filtered.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <button className="flex items-center gap-2 bg-[var(--color-primary)] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[var(--color-primary-light)] transition-colors">
-          <Plus size={16} />
-          <span className="hidden sm:inline">New Task</span>
+        <button className="flex items-center gap-2 text-white px-5 py-3 rounded-xl text-sm font-semibold shadow-lg transition-all hover:shadow-xl active:scale-[0.98]"
+          style={{ background: 'var(--primary)' }}>
+          <Plus size={18} strokeWidth={2.5} />
+          <span>New Task</span>
         </button>
       </div>
 
-      {/* Search & Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        {/* Search */}
+      {/* Filters Bar */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" />
+          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
           <input
             type="text"
             placeholder="Search tasks..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 bg-white border border-[var(--color-border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]/30 focus:border-[var(--color-secondary)]"
+            className="w-full pl-11 pr-4 py-3 rounded-xl text-sm focus:outline-none transition-all"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+            onFocus={(e) => e.target.style.borderColor = 'var(--primary)'}
+            onBlur={(e) => e.target.style.borderColor = 'var(--border)'}
           />
         </div>
 
-        {/* Status Filter */}
-        <div className="relative">
-          <button
-            onClick={() => { setShowStatusDropdown(!showStatusDropdown); setShowPriorityDropdown(false); }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-[var(--color-border)] rounded-lg text-sm hover:bg-gray-50"
-          >
-            <Filter size={14} />
-            {statusFilter === 'all' ? 'Status' : STATUS_CONFIG[statusFilter].label}
-            <ChevronDown size={14} />
-          </button>
-          {showStatusDropdown && (
-            <div className="absolute right-0 top-full mt-1 bg-white border border-[var(--color-border)] rounded-lg shadow-lg z-10 min-w-[140px] py-1">
-              <button onClick={() => { setStatusFilter('all'); setShowStatusDropdown(false); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">All</button>
-              {(Object.keys(STATUS_CONFIG) as TaskStatus[]).map((s) => (
-                <button key={s} onClick={() => { setStatusFilter(s); setShowStatusDropdown(false); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">
-                  {STATUS_CONFIG[s].label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <div className="flex gap-2">
+          {/* Status Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setOpenDropdown(openDropdown === 'status' ? null : 'status')}
+              className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all"
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+            >
+              <Filter size={14} />
+              {statusFilter === 'all' ? 'Status' : STATUS_CONFIG[statusFilter].label}
+              <ChevronDown size={14} />
+            </button>
+            {openDropdown === 'status' && (
+              <div className="absolute right-0 top-full mt-2 rounded-xl shadow-xl z-20 min-w-[160px] py-2 overflow-hidden"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                {['all', ...Object.keys(STATUS_CONFIG)].map((s) => (
+                  <button key={s} onClick={() => { setStatusFilter(s as TaskStatus | 'all'); setOpenDropdown(null); }}
+                    className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors"
+                    style={{ color: 'var(--text)' }}>
+                    {s === 'all' ? 'All Statuses' : STATUS_CONFIG[s as TaskStatus].label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
-        {/* Priority Filter */}
-        <div className="relative">
-          <button
-            onClick={() => { setShowPriorityDropdown(!showPriorityDropdown); setShowStatusDropdown(false); }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-[var(--color-border)] rounded-lg text-sm hover:bg-gray-50"
-          >
-            <Filter size={14} />
-            {priorityFilter === 'all' ? 'Priority' : PRIORITY_CONFIG[priorityFilter].label}
-            <ChevronDown size={14} />
-          </button>
-          {showPriorityDropdown && (
-            <div className="absolute right-0 top-full mt-1 bg-white border border-[var(--color-border)] rounded-lg shadow-lg z-10 min-w-[140px] py-1">
-              <button onClick={() => { setPriorityFilter('all'); setShowPriorityDropdown(false); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">All</button>
-              {(Object.keys(PRIORITY_CONFIG) as TaskPriority[]).map((p) => (
-                <button key={p} onClick={() => { setPriorityFilter(p); setShowPriorityDropdown(false); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${PRIORITY_CONFIG[p].dot}`} />
-                  {PRIORITY_CONFIG[p].label}
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Priority Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setOpenDropdown(openDropdown === 'priority' ? null : 'priority')}
+              className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all"
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+            >
+              <Filter size={14} />
+              {priorityFilter === 'all' ? 'Priority' : PRIORITY_CONFIG[priorityFilter].label}
+              <ChevronDown size={14} />
+            </button>
+            {openDropdown === 'priority' && (
+              <div className="absolute right-0 top-full mt-2 rounded-xl shadow-xl z-20 min-w-[160px] py-2 overflow-hidden"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                {['all', ...Object.keys(PRIORITY_CONFIG)].map((p) => (
+                  <button key={p} onClick={() => { setPriorityFilter(p as TaskPriority | 'all'); setOpenDropdown(null); }}
+                    className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2 transition-colors"
+                    style={{ color: 'var(--text)' }}>
+                    {p !== 'all' && <span className={`w-2.5 h-2.5 rounded-full ${PRIORITY_CONFIG[p as TaskPriority].dot}`} />}
+                    {p === 'all' ? 'All Priorities' : PRIORITY_CONFIG[p as TaskPriority].label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Task Table - Desktop */}
-      <div className="hidden md:block bg-white rounded-xl border border-[var(--color-border)] overflow-hidden">
+      {/* Task Table — Desktop */}
+      <div className="hidden md:block rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[var(--color-border)] bg-gray-50/50">
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Task</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Assignee</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Status</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Priority</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Due Date</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">Logs</th>
+            <tr style={{ borderBottom: '1px solid var(--border)' }}>
+              {['Task', 'Assignee', 'Status', 'Priority', 'Due Date', 'Logs'].map((h) => (
+                <th key={h} className="text-left px-6 py-4 text-[11px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+                  {h}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -117,49 +122,54 @@ export function TaskList() {
               const sc = STATUS_CONFIG[task.status];
               const pc = PRIORITY_CONFIG[task.priority];
               return (
-                <tr
-                  key={task.id}
+                <tr key={task.id}
                   onClick={() => navigate(`/task/${task.id}`)}
-                  className="border-b border-[var(--color-border)] last:border-0 hover:bg-gray-50/50 cursor-pointer transition-colors"
+                  className="cursor-pointer transition-colors"
+                  style={{ borderBottom: '1px solid var(--border)' }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#fafafa'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                 >
-                  <td className="px-4 py-3">
-                    <p className="text-sm font-medium">{task.title}</p>
-                    <div className="flex gap-1 mt-1">
+                  <td className="px-6 py-5">
+                    <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{task.title}</p>
+                    <div className="flex gap-1.5 mt-2">
                       {task.tags.map((tag) => (
-                        <span key={tag} className="text-[10px] bg-gray-100 text-[var(--color-text-secondary)] px-1.5 py-0.5 rounded">
+                        <span key={tag} className="text-[10px] font-medium px-2.5 py-1 rounded-full"
+                          style={{ background: 'var(--bg)', color: 'var(--text-secondary)' }}>
                           {tag}
                         </span>
                       ))}
                     </div>
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-[var(--color-secondary)] flex items-center justify-center text-white text-xs font-medium">
-                        {task.assignee.name.charAt(0)}
+                  <td className="px-6 py-5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
+                        style={{ background: 'var(--primary)', color: '#fff' }}>
+                        {task.assignee.name.split(' ').map(n => n[0]).join('')}
                       </div>
-                      <span className="text-sm">{task.assignee.name.split(' ')[0]}</span>
+                      <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{task.assignee.name.split(' ')[0]}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${sc.bg} ${sc.color}`}>
+                  <td className="px-6 py-5">
+                    <span className={`inline-flex px-3 py-1.5 rounded-lg text-xs font-semibold ${sc.bg} ${sc.color}`}>
                       {sc.label}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
-                    <div className={`flex items-center gap-1.5 text-xs font-medium ${pc.color}`}>
-                      <span className={`w-2 h-2 rounded-full ${pc.dot}`} />
+                  <td className="px-6 py-5">
+                    <div className={`flex items-center gap-2 text-xs font-semibold ${pc.color}`}>
+                      <span className={`w-2.5 h-2.5 rounded-full ${pc.dot}`} />
                       {pc.label}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-sm text-[var(--color-text-secondary)]">
+                  <td className="px-6 py-5 text-sm" style={{ color: 'var(--text-secondary)' }}>
                     {task.dueDate || '—'}
                   </td>
-                  <td className="px-4 py-3 text-sm text-[var(--color-text-secondary)]">
+                  <td className="px-6 py-5">
                     {task.logCount > 0 ? (
-                      <span className="bg-[var(--color-primary)]/10 text-[var(--color-primary)] px-2 py-0.5 rounded-full text-xs font-medium">
+                      <span className="text-xs font-bold px-3 py-1.5 rounded-full"
+                        style={{ background: 'rgba(123,104,238,0.1)', color: 'var(--primary)' }}>
                         {task.logCount}
                       </span>
-                    ) : '—'}
+                    ) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                   </td>
                 </tr>
               );
@@ -168,42 +178,40 @@ export function TaskList() {
         </table>
       </div>
 
-      {/* Task Cards - Mobile */}
+      {/* Task Cards — Mobile */}
       <div className="md:hidden space-y-3">
         {filtered.map((task) => {
           const sc = STATUS_CONFIG[task.status];
           const pc = PRIORITY_CONFIG[task.priority];
           return (
-            <div
-              key={task.id}
+            <div key={task.id}
               onClick={() => navigate(`/task/${task.id}`)}
-              className="bg-white rounded-xl border border-[var(--color-border)] p-4 active:bg-gray-50 cursor-pointer"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{task.title}</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <div className="w-6 h-6 rounded-full bg-[var(--color-secondary)] flex items-center justify-center text-white text-[10px] font-medium">
-                      {task.assignee.name.charAt(0)}
-                    </div>
-                    <span className="text-xs text-[var(--color-text-secondary)]">{task.assignee.name.split(' ')[0]}</span>
-                  </div>
-                </div>
-                <span className={`shrink-0 inline-flex px-2 py-1 rounded-full text-[10px] font-medium ${sc.bg} ${sc.color}`}>
+              className="rounded-2xl p-5 active:scale-[0.99] cursor-pointer transition-all"
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <p className="text-[15px] font-semibold leading-snug flex-1" style={{ color: 'var(--text)' }}>{task.title}</p>
+                <span className={`shrink-0 inline-flex px-2.5 py-1 rounded-lg text-[10px] font-bold ${sc.bg} ${sc.color}`}>
                   {sc.label}
                 </span>
               </div>
-              <div className="flex items-center gap-3 mt-3 pt-3 border-t border-[var(--color-border)]">
-                <div className={`flex items-center gap-1 text-[10px] font-medium ${pc.color}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${pc.dot}`} />
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold"
+                  style={{ background: 'var(--primary)', color: '#fff' }}>
+                  {task.assignee.name.split(' ').map(n => n[0]).join('')}
+                </div>
+                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{task.assignee.name.split(' ')[0]}</span>
+              </div>
+              <div className="flex items-center gap-4 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
+                <div className={`flex items-center gap-1.5 text-[11px] font-semibold ${pc.color}`}>
+                  <span className={`w-2 h-2 rounded-full ${pc.dot}`} />
                   {pc.label}
                 </div>
                 {task.dueDate && (
-                  <span className="text-[10px] text-[var(--color-text-secondary)]">📅 {task.dueDate}</span>
+                  <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>📅 {task.dueDate}</span>
                 )}
                 {task.logCount > 0 && (
-                  <span className="text-[10px] bg-[var(--color-primary)]/10 text-[var(--color-primary)] px-1.5 py-0.5 rounded-full font-medium">
-                    {task.logCount} logs
+                  <span className="text-[11px] font-bold" style={{ color: 'var(--primary)' }}>
+                    📝 {task.logCount} logs
                   </span>
                 )}
               </div>
