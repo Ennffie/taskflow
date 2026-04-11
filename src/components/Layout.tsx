@@ -65,7 +65,7 @@ export function Layout({ children }: { children: ReactNode }) {
       {/* Main */}
       <main className="flex-1 lg:ml-[260px] min-h-screen">
         {/* Top Bar */}
-        <header className="h-[72px] flex items-center justify-between px-5 md:px-8" style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
+        <header className="h-[72px] flex items-center justify-between px-4 lg:px-8" style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
           <div className="flex items-center gap-3">
             {/* Mobile menu */}
             <button className="lg:hidden p-1" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
@@ -80,8 +80,8 @@ export function Layout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        {/* Content - with safe margins on all sides */}
-        <div className="p-4 min-h-screen">
+        {/* Content - with safe margins */}
+        <div className="p-4 lg:p-8 min-h-screen" style={{ background: 'var(--bg)' }}>
           <div className="max-w-5xl mx-auto">
             {children}
           </div>
