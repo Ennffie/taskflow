@@ -15,8 +15,8 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen flex">
-      {/* Sidebar — Desktop */}
-      <aside className="hidden md:flex md:w-[260px] md:flex-col md:fixed md:inset-y-0" style={{ background: 'var(--sidebar-bg)' }}>
+      {/* Sidebar — Desktop only, hidden on mobile */}
+      <aside className="hidden lg:flex lg:w-[260px] lg:flex-col lg:fixed lg:inset-y-0" style={{ background: 'var(--sidebar-bg)' }}>
         {/* Logo */}
         <div className="h-[72px] flex items-center px-6">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'var(--primary)' }}>
@@ -63,16 +63,15 @@ export function Layout({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 md:ml-[260px] min-h-screen">
+      <main className="flex-1 lg:ml-[260px] min-h-screen">
         {/* Top Bar */}
-        <header className="h-[72px] flex items-center justify-between px-6 md:px-10" style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
-          <div className="flex items-center gap-4">
-            <button className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        <header className="h-[72px] flex items-center justify-between px-5 md:px-8" style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
+          <div className="flex items-center gap-3">
+            {/* Mobile menu */}
+            <button className="lg:hidden p-1" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+              {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
-            <div>
-              <h1 className="text-xl font-bold" style={{ color: 'var(--text)' }}>Task Management</h1>
-            </div>
+            <h1 className="text-lg font-bold" style={{ color: 'var(--text)' }}>TaskFlow</h1>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs font-semibold px-3 py-1.5 rounded-full" style={{ background: 'rgba(123,104,238,0.1)', color: 'var(--primary)' }}>
@@ -82,14 +81,14 @@ export function Layout({ children }: { children: ReactNode }) {
         </header>
 
         {/* Content */}
-        <div className="p-6 md:p-10">
+        <div className="p-5 md:p-8">
           {children}
         </div>
       </main>
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-50 flex">
+        <div className="lg:hidden fixed inset-0 z-50 flex">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileMenuOpen(false)} />
           <aside className="relative w-[280px] flex flex-col" style={{ background: 'var(--sidebar-bg)' }}>
             <div className="h-[72px] flex items-center px-6">
@@ -112,7 +111,7 @@ export function Layout({ children }: { children: ReactNode }) {
       )}
 
       {/* Bottom Nav — Mobile */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex justify-around py-2 px-4" style={{ background: 'var(--surface)', borderTop: '1px solid var(--border)' }}>
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 flex justify-around py-2.5 px-4 safe-bottom" style={{ background: 'var(--surface)', borderTop: '1px solid var(--border)' }}>
         {navItems.map((item) => (
           <a key={item.label} href={item.path} className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-lg"
             style={{ color: item.active ? 'var(--primary)' : 'var(--text-muted)' }}>
