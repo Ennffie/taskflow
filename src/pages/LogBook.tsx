@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Paperclip, Clock, Calendar, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, Paperclip, Clock, Calendar, FileText, Palette, Search, Users, Eye, FileEdit } from 'lucide-react';
 import type { LogEntry } from '../types';
 import { mockTasks, mockLogEntries, STATUS_CONFIG } from '../types';
 
-const CAT: Record<string, { label: string; color: string; bg: string; icon: string }> = {
-  design:   { label: 'Design',   color: '#7c3aed', bg: 'rgba(124,58,237,0.1)',  icon: '🎨' },
-  research: { label: 'Research', color: '#2563eb', bg: 'rgba(37,99,235,0.1)',   icon: '🔍' },
-  meeting:  { label: 'Meeting',  color: '#16a34a', bg: 'rgba(22,163,74,0.1)',   icon: '🤝' },
-  review:   { label: 'Review',   color: '#d97706', bg: 'rgba(217,119,6,0.1)',   icon: '👀' },
-  other:    { label: 'Other',    color: '#6b7280', bg: 'rgba(107,114,128,0.1)', icon: '📝' },
+const CAT: Record<string, { label: string; color: string; bg: string; icon: any }> = {
+  design:   { label: 'Design',   color: '#7c3aed', bg: 'rgba(124,58,237,0.1)',  icon: Palette },
+  research: { label: 'Research', color: '#2563eb', bg: 'rgba(37,99,235,0.1)',   icon: Search },
+  meeting:  { label: 'Meeting',  color: '#16a34a', bg: 'rgba(22,163,74,0.1)',   icon: Users },
+  review:   { label: 'Review',   color: '#d97706', bg: 'rgba(217,119,6,0.1)',   icon: Eye },
+  other:    { label: 'Other',    color: '#6b7280', bg: 'rgba(107,114,128,0.1)', icon: FileEdit },
 };
 
 export function LogBook() {
@@ -27,15 +27,15 @@ export function LogBook() {
   const dates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
 
   return (
-    <div className="pb-24 lg:pb-0">
+    <div className="pb-24 lg:pb-0" style={{ paddingLeft: '20px', paddingRight: '20px' }}>
       {/* Back */}
       <button onClick={() => navigate('/')} className="flex items-center gap-2 text-sm font-medium mb-6 transition-colors"
         style={{ color: 'var(--primary)' }}>
         <ArrowLeft size={16} /> Back to Tasks
       </button>
 
-      {/* Task Header Card */}
-      <div className="rounded-2xl p-6 md:p-8 mb-8" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      {/* Task Header Card - simplified */}
+      <div className="rounded-2xl p-6 md:p-8 mb-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="flex-1">
             <h2 className="text-xl md:text-2xl font-bold mb-2" style={{ color: 'var(--text)' }}>{task.title}</h2>
@@ -45,22 +45,24 @@ export function LogBook() {
             {sc.label}
           </span>
         </div>
-        <div className="flex flex-wrap items-center gap-5 mt-6 pt-6" style={{ borderTop: '1px solid var(--border)' }}>
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold" style={{ background: 'var(--primary)', color: '#fff' }}>
-              {task.assignee.name.split(' ').map(n => n[0]).join('')}
-            </div>
-            <span className="text-sm font-medium">{task.assignee.name}</span>
+      </div>
+
+      {/* Task Meta Info - moved below */}
+      <div className="flex flex-wrap items-center gap-5 mb-10 px-2">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold" style={{ background: 'var(--primary)', color: '#fff' }}>
+            {task.updatedBy.name.split(' ').map((n: string) => n[0]).join('')}
           </div>
-          {task.dueDate && (
-            <span className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
-              <Calendar size={15} /> {task.dueDate}
-            </span>
-          )}
-          <span className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
-            <FileText size={15} /> {entries.length} log{entries.length !== 1 ? 's' : ''}
-          </span>
+          <span className="text-sm font-medium">{task.updatedBy.name}</span>
         </div>
+        {task.dueDate && (
+          <span className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
+            <Calendar size={15} /> {task.dueDate}
+          </span>
+        )}
+        <span className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
+          <FileText size={15} /> {entries.length} log{entries.length !== 1 ? 's' : ''}
+        </span>
       </div>
 
       {/* New Entry Form */}
@@ -80,7 +82,7 @@ export function LogBook() {
                 <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl text-sm focus:outline-none bg-white"
                   style={{ border: '1px solid var(--border)' }}>
-                  {Object.entries(CAT).map(([k, c]) => <option key={k} value={k}>{c.icon} {c.label}</option>)}
+                  {Object.entries(CAT).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}
                 </select>
               </div>
             </div>
@@ -160,7 +162,7 @@ export function LogBook() {
                     <div className="flex items-center gap-2 mb-3">
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold"
                         style={{ background: cat.bg, color: cat.color }}>
-                        {cat.icon} {cat.label}
+                        <cat.icon size={12} /> {cat.label}
                       </span>
                       {entry.timeSpent && (
                         <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-muted)' }}>

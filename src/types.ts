@@ -26,11 +26,12 @@ export interface Task {
   description?: string;
   status: TaskStatus;
   priority: TaskPriority;
-  assignee: User;
+  assignees: User[];
   dueDate?: string;
   tags: string[];
   createdAt: string;
   updatedAt: string;
+  updatedBy: User;
   logCount: number;
 }
 
@@ -69,11 +70,12 @@ export const mockTasks: Task[] = [
     description: 'Design the login and registration flow for CRCE mobile app',
     status: 'in_progress',
     priority: 'high',
-    assignee: mockUsers[1],
+    assignees: [mockUsers[1], mockUsers[2]],
     dueDate: '2026-04-15',
     tags: ['Design', 'Mobile'],
     createdAt: '2026-04-08',
     updatedAt: '2026-04-11',
+    updatedBy: mockUsers[1],
     logCount: 5,
   },
   {
@@ -82,11 +84,12 @@ export const mockTasks: Task[] = [
     description: 'Redesign the main dashboard with new data visualization',
     status: 'todo',
     priority: 'medium',
-    assignee: mockUsers[2],
+    assignees: [mockUsers[2]],
     dueDate: '2026-04-18',
     tags: ['Design', 'Dashboard'],
     createdAt: '2026-04-09',
     updatedAt: '2026-04-10',
+    updatedBy: mockUsers[2],
     logCount: 2,
   },
   {
@@ -95,11 +98,12 @@ export const mockTasks: Task[] = [
     description: 'Conduct user interviews for the new portal design',
     status: 'review',
     priority: 'high',
-    assignee: mockUsers[3],
+    assignees: [mockUsers[3]],
     dueDate: '2026-04-12',
     tags: ['Research'],
     createdAt: '2026-04-05',
     updatedAt: '2026-04-11',
+    updatedBy: mockUsers[3],
     logCount: 8,
   },
   {
@@ -108,11 +112,11 @@ export const mockTasks: Task[] = [
     description: 'Update button, input, and card components to v2 spec',
     status: 'in_progress',
     priority: 'medium',
-    assignee: mockUsers[4],
-    dueDate: '2026-04-16',
+    assignees: [mockUsers[4], mockUsers[5]],
     tags: ['Design System'],
     createdAt: '2026-04-07',
     updatedAt: '2026-04-11',
+    updatedBy: mockUsers[4],
     logCount: 3,
   },
   {
@@ -121,11 +125,12 @@ export const mockTasks: Task[] = [
     description: 'Create infographics for the annual report',
     status: 'done',
     priority: 'low',
-    assignee: mockUsers[5],
+    assignees: [mockUsers[5]],
     dueDate: '2026-04-10',
     tags: ['Infographic'],
     createdAt: '2026-04-01',
     updatedAt: '2026-04-10',
+    updatedBy: mockUsers[5],
     logCount: 6,
   },
   {
@@ -134,11 +139,12 @@ export const mockTasks: Task[] = [
     description: 'High-fidelity prototype for new user onboarding',
     status: 'todo',
     priority: 'urgent',
-    assignee: mockUsers[1],
+    assignees: [mockUsers[1]],
     dueDate: '2026-04-13',
     tags: ['Prototype', 'Mobile'],
     createdAt: '2026-04-10',
     updatedAt: '2026-04-10',
+    updatedBy: mockUsers[1],
     logCount: 0,
   },
   {
@@ -147,11 +153,12 @@ export const mockTasks: Task[] = [
     description: 'WCAG 2.1 AA compliance audit for main web platform',
     status: 'todo',
     priority: 'medium',
-    assignee: mockUsers[3],
+    assignees: [mockUsers[3]],
     dueDate: '2026-04-20',
     tags: ['Audit', 'A11y'],
     createdAt: '2026-04-11',
     updatedAt: '2026-04-11',
+    updatedBy: mockUsers[3],
     logCount: 0,
   },
 ];

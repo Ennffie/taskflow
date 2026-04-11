@@ -65,13 +65,13 @@ export function Layout({ children }: { children: ReactNode }) {
       {/* Main */}
       <main className="flex-1 lg:ml-[260px] min-h-screen">
         {/* Top Bar */}
-        <header className="h-[72px] flex items-center justify-between px-4 lg:px-8" style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
+        <header className="h-[72px] flex items-center justify-between lg:px-8" style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', paddingLeft: '20px', paddingRight: '20px' }}>
           <div className="flex items-center gap-3">
             {/* Mobile menu */}
             <button className="lg:hidden p-1" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
               {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
-            <h1 className="text-lg font-bold" style={{ color: 'var(--text)' }}>TaskFlow</h1>
+            <h1 className="text-lg font-bold" style={{ color: 'var(--text)' }}>PMC Tasks Tracker</h1>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs font-semibold px-3 py-1.5 rounded-full" style={{ background: 'rgba(123,104,238,0.1)', color: 'var(--primary)' }}>

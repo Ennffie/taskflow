@@ -1,8 +1,20 @@
 import { useState } from 'react';
-import { Search, Filter, Plus, ChevronDown } from 'lucide-react';
+import { Search, Filter, Plus, ChevronDown, Calendar, FileText, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { TaskStatus, TaskPriority } from '../types';
 import { mockTasks, STATUS_CONFIG, PRIORITY_CONFIG } from '../types';
+
+function relativeDate(dateStr: string): string {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const d = new Date(dateStr);
+  d.setHours(0, 0, 0, 0);
+  const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Tomorrow';
+  if (diff === -1) return 'Yesterday';
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
 
 export function TaskList() {
   const navigate = useNavigate();
@@ -19,18 +31,14 @@ export function TaskList() {
   });
 
   return (
-    <div className="pb-24 lg:pb-0">
-      {/* Section Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h2 className="text-2xl md:text-3xl font-bold" style={{ color: 'var(--text)' }}>All Tasks</h2>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-            {filtered.length} task{filtered.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-        <button className="flex items-center gap-2 text-white px-5 py-3 rounded-xl text-sm font-semibold shadow-lg transition-all hover:shadow-xl active:scale-[0.98]"
+    <div className="pb-24 lg:pb-0" style={{ paddingLeft: '20px', paddingRight: '20px' }}>
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+          {filtered.length} task{filtered.length !== 1 ? 's' : ''}
+        </p>
+        <button className="flex items-center gap-2 text-white px-4 py-2.5 rounded-lg text-sm font-semibold shadow-md transition-all hover:shadow-lg active:scale-[0.98]"
           style={{ background: 'var(--primary)' }}>
-          <Plus size={18} strokeWidth={2.5} />
+          <Plus size={16} strokeWidth={2.5} />
           <span>New Task</span>
         </button>
       </div>
@@ -38,17 +46,17 @@ export function TaskList() {
       {/* Filters Bar */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
-          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
           <input
             type="text"
             placeholder="Search tasks..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-11 pr-4 py-3 rounded-xl text-sm focus:outline-none transition-all"
+            className="w-full pl-4 pr-11 py-3 rounded-xl text-sm focus:outline-none transition-all"
             style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
             onFocus={(e) => e.target.style.borderColor = 'var(--primary)'}
             onBlur={(e) => e.target.style.borderColor = 'var(--border)'}
           />
+          <Search size={18} className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
         </div>
 
         <div className="flex gap-2">
@@ -56,20 +64,19 @@ export function TaskList() {
           <div className="relative">
             <button
               onClick={() => setOpenDropdown(openDropdown === 'status' ? null : 'status')}
-              className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all"
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+              className="flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-all"
             >
-              <Filter size={14} />
-              {statusFilter === 'all' ? 'Status' : STATUS_CONFIG[statusFilter].label}
-              <ChevronDown size={14} />
+              <Filter size={16} className="text-gray-400" />
+              <span>{statusFilter === 'all' ? 'Status' : STATUS_CONFIG[statusFilter].label}</span>
+              <ChevronDown size={16} className="text-gray-400" />
             </button>
             {openDropdown === 'status' && (
-              <div className="absolute right-0 top-full mt-2 rounded-xl shadow-xl z-20 min-w-[160px] py-2 overflow-hidden"
-                style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                {['all', ...Object.keys(STATUS_CONFIG)].map((s) => (
+              <div className="absolute left-0 sm:right-0 top-full mt-3 rounded-2xl shadow-2xl z-20"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', minWidth: '240px', padding: '16px' }}>
+                {['all', ...Object.keys(STATUS_CONFIG)].map((s, idx) => (
                   <button key={s} onClick={() => { setStatusFilter(s as TaskStatus | 'all'); setOpenDropdown(null); }}
-                    className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors"
-                    style={{ color: 'var(--text)' }}>
+                    className="w-full text-left font-medium hover:bg-gray-100 rounded-xl transition-colors"
+                    style={{ color: 'var(--text)', padding: '16px 20px', marginBottom: idx === 4 ? 0 : '12px', fontSize: '15px' }}>
                     {s === 'all' ? 'All Statuses' : STATUS_CONFIG[s as TaskStatus].label}
                   </button>
                 ))}
@@ -81,21 +88,20 @@ export function TaskList() {
           <div className="relative">
             <button
               onClick={() => setOpenDropdown(openDropdown === 'priority' ? null : 'priority')}
-              className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all"
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+              className="flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-all"
             >
-              <Filter size={14} />
-              {priorityFilter === 'all' ? 'Priority' : PRIORITY_CONFIG[priorityFilter].label}
-              <ChevronDown size={14} />
+              <Filter size={16} className="text-gray-400" />
+              <span>{priorityFilter === 'all' ? 'Priority' : PRIORITY_CONFIG[priorityFilter].label}</span>
+              <ChevronDown size={16} className="text-gray-400" />
             </button>
             {openDropdown === 'priority' && (
-              <div className="absolute right-0 top-full mt-2 rounded-xl shadow-xl z-20 min-w-[160px] py-2 overflow-hidden"
+              <div className="absolute right-0 top-full mt-2 rounded-2xl shadow-2xl z-20 min-w-[220px] p-3"
                 style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                 {['all', ...Object.keys(PRIORITY_CONFIG)].map((p) => (
                   <button key={p} onClick={() => { setPriorityFilter(p as TaskPriority | 'all'); setOpenDropdown(null); }}
-                    className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2 transition-colors"
-                    style={{ color: 'var(--text)' }}>
-                    {p !== 'all' && <span className={`w-2.5 h-2.5 rounded-full ${PRIORITY_CONFIG[p as TaskPriority].dot}`} />}
+                    className="w-full text-left px-5 py-4 text-sm font-medium hover:bg-gray-100 flex items-center gap-3 rounded-xl transition-colors mb-2 last:mb-0"
+                    style={{ color: 'var(--text)', minHeight: '48px' }}>
+                    {p !== 'all' && <span className={`w-3 h-3 rounded-full ${PRIORITY_CONFIG[p as TaskPriority].dot}`} />}
                     {p === 'all' ? 'All Priorities' : PRIORITY_CONFIG[p as TaskPriority].label}
                   </button>
                 ))}
@@ -144,9 +150,9 @@ export function TaskList() {
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
                         style={{ background: 'var(--primary)', color: '#fff' }}>
-                        {task.assignee.name.split(' ').map(n => n[0]).join('')}
+                        {task.updatedBy.name.split(' ').map((n: string) => n[0]).join('')}
                       </div>
-                      <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{task.assignee.name.split(' ')[0]}</span>
+                      <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{task.updatedBy.name.split(' ')[0]}</span>
                     </div>
                   </td>
                   <td className="px-6 py-5">
@@ -194,24 +200,31 @@ export function TaskList() {
                   {sc.label}
                 </span>
               </div>
-              <div className="flex items-center gap-2.5 mb-3">
-                <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold"
-                  style={{ background: 'var(--primary)', color: '#fff' }}>
-                  {task.assignee.name.split(' ').map(n => n[0]).join('')}
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <div className="flex items-center flex-wrap gap-x-4 gap-y-1">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0"
+                      style={{ background: 'var(--primary)', color: '#fff' }}>
+                      {task.updatedBy.name.split(' ').map((n: string) => n[0]).join('')}
+                    </div>
+                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{task.updatedBy.name.split(' ')[0]}</span>
+                  </div>
+                  <div className={`flex items-center gap-1.5 text-[11px] font-semibold ${pc.color}`}>
+                    <span className={`w-2 h-2 rounded-full ${pc.dot}`} />
+                    {pc.label}
+                  </div>
+                  {task.dueDate && (
+                    <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-muted)' }}><Calendar size={12} /> {task.dueDate}</span>
+                  )}
+                  {task.logCount > 0 && (
+                    <span className="flex items-center gap-1 text-[11px] font-bold" style={{ color: 'var(--primary)' }}>
+                      <FileText size={12} /> {task.logCount} logs
+                    </span>
+                  )}
                 </div>
-                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{task.assignee.name.split(' ')[0]}</span>
-              </div>
-              <div className="flex items-center gap-4 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
-                <div className={`flex items-center gap-1.5 text-[11px] font-semibold ${pc.color}`}>
-                  <span className={`w-2 h-2 rounded-full ${pc.dot}`} />
-                  {pc.label}
-                </div>
-                {task.dueDate && (
-                  <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>📅 {task.dueDate}</span>
-                )}
-                {task.logCount > 0 && (
-                  <span className="text-[11px] font-bold" style={{ color: 'var(--primary)' }}>
-                    📝 {task.logCount} logs
+                {task.updatedAt && (
+                  <span className="shrink-0 flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-muted)' }}>
+                    <Clock size={12} /> {relativeDate(task.updatedAt)}
                   </span>
                 )}
               </div>
