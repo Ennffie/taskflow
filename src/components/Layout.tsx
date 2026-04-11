@@ -81,7 +81,7 @@ export function Layout({ children }: { children: ReactNode }) {
         </header>
 
         {/* Content */}
-        <div className="p-5 md:p-8">
+        <div className="px-6 py-6 md:px-10 md:py-8">
           {children}
         </div>
       </main>
@@ -111,7 +111,7 @@ export function Layout({ children }: { children: ReactNode }) {
       )}
 
       {/* Bottom Nav — Mobile */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 flex justify-around py-2.5 px-4 safe-bottom" style={{ background: 'var(--surface)', borderTop: '1px solid var(--border)' }}>
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 flex justify-around items-end pb-safe pt-5 px-4" style={{ background: 'var(--surface)', borderTop: '1px solid var(--border)', minHeight: '80px' }}>
         {navItems.map((item) => (
           <a key={item.label} href={item.path} className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-lg"
             style={{ color: item.active ? 'var(--primary)' : 'var(--text-muted)' }}>
