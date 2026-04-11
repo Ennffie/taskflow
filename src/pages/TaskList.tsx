@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Search, Filter, Plus, ChevronDown, Calendar, FileText, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { TaskStatus, TaskPriority } from '../types';
@@ -22,6 +22,20 @@ export function TaskList() {
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
   const [openDropdown, setOpenDropdown] = useState<'status' | 'priority' | null>(null);
+  const statusRef = useRef<HTMLDivElement>(null);
+  const priorityRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (statusRef.current && !statusRef.current.contains(e.target as Node)) {
+        if (priorityRef.current && !priorityRef.current.contains(e.target as Node)) {
+          setOpenDropdown(null);
+        }
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const filtered = mockTasks.filter((t) => {
     if (search && !t.title.toLowerCase().includes(search.toLowerCase())) return false;
@@ -61,7 +75,7 @@ export function TaskList() {
 
         <div className="flex gap-2">
           {/* Status Dropdown */}
-          <div className="relative">
+          <div className="relative" ref={statusRef}>
             <button
               onClick={() => setOpenDropdown(openDropdown === 'status' ? null : 'status')}
               className="flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-all"
@@ -71,21 +85,27 @@ export function TaskList() {
               <ChevronDown size={16} className="text-gray-400" />
             </button>
             {openDropdown === 'status' && (
-              <div className="absolute left-0 sm:right-0 top-full mt-3 rounded-2xl shadow-2xl z-20"
-                style={{ background: 'var(--surface)', border: '1px solid var(--border)', minWidth: '240px', padding: '16px' }}>
-                {['all', ...Object.keys(STATUS_CONFIG)].map((s, idx) => (
-                  <button key={s} onClick={() => { setStatusFilter(s as TaskStatus | 'all'); setOpenDropdown(null); }}
-                    className="w-full text-left font-medium hover:bg-gray-100 rounded-xl transition-colors"
-                    style={{ color: 'var(--text)', padding: '16px 20px', marginBottom: idx === 4 ? 0 : '12px', fontSize: '15px' }}>
-                    {s === 'all' ? 'All Statuses' : STATUS_CONFIG[s as TaskStatus].label}
-                  </button>
-                ))}
+              <div className="absolute left-0 sm:right-0 top-full mt-2 rounded-xl shadow-2xl z-20"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', minWidth: '200px', padding: '8px' }}>
+                {['all', ...Object.keys(STATUS_CONFIG)].map((s, idx) => {
+                  const count = s === 'all' 
+                    ? filtered.length 
+                    : mockTasks.filter(t => t.status === s).length;
+                  return (
+                    <button key={s} onClick={() => { setStatusFilter(s as TaskStatus | 'all'); setOpenDropdown(null); }}
+                      className="w-full flex items-center justify-between text-left font-medium hover:bg-gray-100 rounded-lg transition-colors"
+                      style={{ color: 'var(--text)', padding: '8px 12px', marginBottom: idx === 4 ? 0 : '8px', fontSize: '14px' }}>
+                      <span>{s === 'all' ? 'All Statuses' : STATUS_CONFIG[s as TaskStatus].label}</span>
+                      <span style={{ color: 'var(--text-muted)' }}>{count}</span>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
 
           {/* Priority Dropdown */}
-          <div className="relative">
+          <div className="relative" ref={priorityRef}>
             <button
               onClick={() => setOpenDropdown(openDropdown === 'priority' ? null : 'priority')}
               className="flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-all"
@@ -95,16 +115,24 @@ export function TaskList() {
               <ChevronDown size={16} className="text-gray-400" />
             </button>
             {openDropdown === 'priority' && (
-              <div className="absolute right-0 top-full mt-2 rounded-2xl shadow-2xl z-20 min-w-[220px] p-3"
-                style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                {['all', ...Object.keys(PRIORITY_CONFIG)].map((p) => (
-                  <button key={p} onClick={() => { setPriorityFilter(p as TaskPriority | 'all'); setOpenDropdown(null); }}
-                    className="w-full text-left px-5 py-4 text-sm font-medium hover:bg-gray-100 flex items-center gap-3 rounded-xl transition-colors mb-2 last:mb-0"
-                    style={{ color: 'var(--text)', minHeight: '48px' }}>
-                    {p !== 'all' && <span className={`w-3 h-3 rounded-full ${PRIORITY_CONFIG[p as TaskPriority].dot}`} />}
-                    {p === 'all' ? 'All Priorities' : PRIORITY_CONFIG[p as TaskPriority].label}
-                  </button>
-                ))}
+              <div className="absolute right-0 top-full mt-2 rounded-xl shadow-2xl z-20"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', minWidth: '200px', padding: '8px' }}>
+                {['all', ...Object.keys(PRIORITY_CONFIG)].map((p, idx) => {
+                  const count = p === 'all'
+                    ? filtered.length
+                    : mockTasks.filter(t => t.priority === p).length;
+                  return (
+                    <button key={p} onClick={() => { setPriorityFilter(p as TaskPriority | 'all'); setOpenDropdown(null); }}
+                      className="w-full flex items-center justify-between text-left font-medium hover:bg-gray-100 rounded-lg transition-colors"
+                      style={{ color: 'var(--text)', padding: '8px 12px', marginBottom: idx === 4 ? 0 : '8px', fontSize: '14px' }}>
+                      <span className="flex items-center gap-2">
+                        {p !== 'all' && <span className={`w-2 h-2 rounded-full ${PRIORITY_CONFIG[p as TaskPriority].dot}`} />}
+                        {p === 'all' ? 'All Priorities' : PRIORITY_CONFIG[p as TaskPriority].label}
+                      </span>
+                      <span style={{ color: 'var(--text-muted)' }}>{count}</span>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -112,7 +140,7 @@ export function TaskList() {
       </div>
 
       {/* Task Table — Desktop */}
-      <div className="hidden md:block rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      <div className="hidden md:block rounded-2xl overflow-x-auto" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         <table className="w-full">
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>

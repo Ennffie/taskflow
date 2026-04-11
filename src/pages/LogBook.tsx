@@ -34,8 +34,8 @@ export function LogBook() {
         <ArrowLeft size={16} /> Back to Tasks
       </button>
 
-      {/* Task Header Card - simplified */}
-      <div className="rounded-2xl p-6 md:p-8 mb-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      {/* Task Header Card */}
+      <div className="rounded-2xl p-6 md:p-8 mb-8" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="flex-1">
             <h2 className="text-xl md:text-2xl font-bold mb-2" style={{ color: 'var(--text)' }}>{task.title}</h2>
@@ -45,24 +45,22 @@ export function LogBook() {
             {sc.label}
           </span>
         </div>
-      </div>
-
-      {/* Task Meta Info - moved below */}
-      <div className="flex flex-wrap items-center gap-5 mb-10 px-2">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold" style={{ background: 'var(--primary)', color: '#fff' }}>
-            {task.updatedBy.name.split(' ').map((n: string) => n[0]).join('')}
+        <div className="flex flex-wrap items-center gap-5 mt-6 pt-6" style={{ borderTop: '1px solid var(--border)' }}>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold" style={{ background: 'var(--primary)', color: '#fff' }}>
+              {task.updatedBy.name.split(' ').map((n: string) => n[0]).join('')}
+            </div>
+            <span className="text-sm font-medium">{task.updatedBy.name}</span>
           </div>
-          <span className="text-sm font-medium">{task.updatedBy.name}</span>
-        </div>
-        {task.dueDate && (
+          {task.dueDate && (
+            <span className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <Calendar size={15} /> {task.dueDate}
+            </span>
+          )}
           <span className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
-            <Calendar size={15} /> {task.dueDate}
+            <FileText size={15} /> {entries.length} log{entries.length !== 1 ? 's' : ''}
           </span>
-        )}
-        <span className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
-          <FileText size={15} /> {entries.length} log{entries.length !== 1 ? 's' : ''}
-        </span>
+        </div>
       </div>
 
       {/* New Entry Form */}
@@ -125,7 +123,7 @@ export function LogBook() {
       )}
 
       {/* Timeline */}
-      <div className="mb-6">
+      <div className="mb-6" style={{ marginTop: '40px' }}>
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Log Book Timeline</h3>
           <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{entries.length} entries</span>
