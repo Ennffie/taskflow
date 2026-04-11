@@ -81,8 +81,10 @@ export function Layout({ children }: { children: ReactNode }) {
         </header>
 
         {/* Content */}
-        <div className="px-6 py-6 md:px-10 md:py-8">
-          {children}
+        <div className="px-5 pb-24 lg:pb-8">
+          <div className="px-4 md:px-0 md:max-w-4xl mx-auto">
+            {children}
+          </div>
         </div>
       </main>
 

@@ -27,7 +27,7 @@ export function LogBook() {
   const dates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
 
   return (
-    <div className="pb-24 md:pb-0">
+    <div className="pb-24 lg:pb-0">
       {/* Back */}
       <button onClick={() => navigate('/')} className="flex items-center gap-2 text-sm font-medium mb-6 transition-colors"
         style={{ color: 'var(--primary)' }}>

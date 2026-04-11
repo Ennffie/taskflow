@@ -19,7 +19,7 @@ export function TaskList() {
   });
 
   return (
-    <div className="pb-24 md:pb-0">
+    <div className="pb-24 lg:pb-0">
       {/* Section Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
