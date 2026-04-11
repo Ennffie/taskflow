@@ -80,9 +80,9 @@ export function Layout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        {/* Content */}
-        <div className="px-5 pb-24 lg:pb-8">
-          <div className="px-4 md:px-0 md:max-w-4xl mx-auto">
+        {/* Content - with safe margins on all sides */}
+        <div className="p-4 min-h-screen">
+          <div className="max-w-5xl mx-auto">
             {children}
           </div>
         </div>
