@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Paperclip, Clock, Calendar, FileText, Palette, Search, Users, Eye, FileEdit } from 'lucide-react';
-import type { LogEntry } from '../types';
-import { mockTasks, mockLogEntries, STATUS_CONFIG } from '../types';
+import { STATUS_CONFIG } from '../types';
+import { fetchTasks, fetchLogEntries } from '../lib/api';
+import type { TaskWithData } from '../lib/api';
+import type { LogEntryRow } from '../lib/api';
 
 const CAT: Record<string, { label: string; color: string; bg: string; icon: any }> = {
   design:   { label: 'Design',   color: '#7c3aed', bg: 'rgba(124,58,237,0.1)',  icon: Palette },
@@ -12,18 +14,40 @@ const CAT: Record<string, { label: string; color: string; bg: string; icon: any 
   other:    { label: 'Other',    color: '#6b7280', bg: 'rgba(107,114,128,0.1)', icon: FileEdit },
 };
 
+interface LogEntryWithProfile extends LogEntryRow {
+  created_by_profile?: { id: string; name: string; email: string; role: string };
+}
+
 export function LogBook() {
   const { taskId } = useParams();
   const navigate = useNavigate();
-  const task = mockTasks.find((t) => t.id === taskId);
-  const entries = taskId ? (mockLogEntries[taskId] || []) : [];
+  const [task, setTask] = useState<TaskWithData | null>(null);
+  const [entries, setEntries] = useState<LogEntryWithProfile[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ date: new Date().toISOString().split('T')[0], event: '', category: 'design', timeSpent: '', fileName: '' });
+
+  useEffect(() => {
+    if (!taskId) return;
+    Promise.all([
+      fetchTasks(),
+      fetchLogEntries(taskId),
+    ]).then(([tasks, logs]) => {
+      const t = tasks.find(t => t.id === taskId);
+      setTask(t || null);
+      setEntries(logs as LogEntryWithProfile[]);
+      setLoading(false);
+    });
+  }, [taskId]);
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-64"><p style={{ color: 'var(--text-secondary)' }}>Loading...</p></div>;
+  }
 
   if (!task) return <div className="flex items-center justify-center h-64"><p style={{ color: 'var(--text-secondary)' }}>Task not found</p></div>;
 
   const sc = STATUS_CONFIG[task.status];
-  const grouped = entries.reduce<Record<string, LogEntry[]>>((a, e) => { (a[e.date] = a[e.date] || []).push(e); return a; }, {});
+  const grouped = entries.reduce<Record<string, LogEntryWithProfile[]>>((a, e) => { (a[e.date] = a[e.date] || []).push(e); return a; }, {});
   const dates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
 
   return (
@@ -47,14 +71,18 @@ export function LogBook() {
         </div>
         <div className="flex flex-wrap items-center gap-5 mt-6 pt-6" style={{ borderTop: '1px solid var(--border)' }}>
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold" style={{ background: 'var(--primary)', color: '#fff' }}>
-              {task.updatedBy.name.split(' ').map((n: string) => n[0]).join('')}
-            </div>
-            <span className="text-sm font-medium">{task.updatedBy.name}</span>
+            {task.updated_by_profile && (
+              <>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold" style={{ background: 'var(--primary)', color: '#fff' }}>
+                  {task.updated_by_profile.name.split(' ').map(n => n[0]).join('')}
+                </div>
+                <span className="text-sm font-medium">{task.updated_by_profile.name}</span>
+              </>
+            )}
           </div>
-          {task.dueDate && (
+          {task.due_date && (
             <span className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
-              <Calendar size={15} /> {task.dueDate}
+              <Calendar size={15} /> {task.due_date}
             </span>
           )}
           <span className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
@@ -154,6 +182,7 @@ export function LogBook() {
             <div className="ml-1.5 pl-8 space-y-3" style={{ borderLeft: '2px solid var(--border)' }}>
               {grouped[date].map((entry) => {
                 const cat = CAT[entry.category || 'other'];
+                const creatorName = entry.created_by_profile?.name || 'Unknown';
                 return (
                   <div key={entry.id} className="relative rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                     <div className="absolute -left-[34px] top-6 w-3.5 h-3.5 rounded-full border-[3px] border-white" style={{ background: 'var(--primary)' }} />
@@ -162,23 +191,23 @@ export function LogBook() {
                         style={{ background: cat.bg, color: cat.color }}>
                         <cat.icon size={12} /> {cat.label}
                       </span>
-                      {entry.timeSpent && (
+                      {entry.time_spent && (
                         <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-muted)' }}>
-                          <Clock size={11} /> {entry.timeSpent}
+                          <Clock size={11} /> {entry.time_spent}
                         </span>
                       )}
                     </div>
                     <p className="text-sm leading-relaxed mb-2" style={{ color: 'var(--text)' }}>{entry.event}</p>
-                    {entry.fileName && (
+                    {entry.file_name && (
                       <div className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--primary)' }}>
-                        <Paperclip size={12} /> {entry.fileName}
+                        <Paperclip size={12} /> {entry.file_name}
                       </div>
                     )}
                     <div className="flex items-center gap-2 mt-4 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
                       <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-semibold" style={{ background: 'var(--primary)', color: '#fff' }}>
-                        {entry.createdBy.name.charAt(0)}
+                        {creatorName.charAt(0)}
                       </div>
-                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{entry.createdBy.name}</span>
+                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{creatorName}</span>
                     </div>
                   </div>
                 );

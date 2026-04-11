@@ -2,7 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { Search, Filter, Plus, ChevronDown, Calendar, FileText, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { TaskStatus, TaskPriority } from '../types';
-import { mockTasks, STATUS_CONFIG, PRIORITY_CONFIG } from '../types';
+import { STATUS_CONFIG, PRIORITY_CONFIG } from '../types';
+import { fetchTasks } from '../lib/api';
+import type { TaskWithData } from '../lib/api';
 
 function relativeDate(dateStr: string): string {
   const today = new Date();
@@ -18,6 +20,8 @@ function relativeDate(dateStr: string): string {
 
 export function TaskList() {
   const navigate = useNavigate();
+  const [tasks, setTasks] = useState<TaskWithData[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
@@ -26,26 +30,39 @@ export function TaskList() {
   const priorityRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    fetchTasks().then(data => { setTasks(data); setLoading(false); });
+  }, []);
+
+  useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (statusRef.current && !statusRef.current.contains(e.target as Node)) {
-        if (priorityRef.current && !priorityRef.current.contains(e.target as Node)) {
-          setOpenDropdown(null);
-        }
+      if (openDropdown &&
+        statusRef.current && !statusRef.current.contains(e.target as Node) &&
+        priorityRef.current && !priorityRef.current.contains(e.target as Node)) {
+        setOpenDropdown(null);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [openDropdown]);
 
-  const filtered = mockTasks.filter((t) => {
+  const filtered = tasks.filter((t) => {
     if (search && !t.title.toLowerCase().includes(search.toLowerCase())) return false;
     if (statusFilter !== 'all' && t.status !== statusFilter) return false;
     if (priorityFilter !== 'all' && t.priority !== priorityFilter) return false;
     return true;
   });
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p style={{ color: 'var(--text-secondary)' }}>Loading tasks...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="pb-24 lg:pb-0" style={{ paddingLeft: '20px', paddingRight: '20px' }}>
+    <div className="pb-32 lg:pb-8" style={{ paddingLeft: '20px', paddingRight: '20px' }}>
+      {/* Count + New Task */}
       <div className="flex items-center justify-between mb-6">
         <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
           {filtered.length} task{filtered.length !== 1 ? 's' : ''}
@@ -88,9 +105,9 @@ export function TaskList() {
               <div className="absolute left-0 sm:right-0 top-full mt-2 rounded-xl shadow-2xl z-20"
                 style={{ background: 'var(--surface)', border: '1px solid var(--border)', minWidth: '200px', padding: '8px' }}>
                 {['all', ...Object.keys(STATUS_CONFIG)].map((s, idx) => {
-                  const count = s === 'all' 
-                    ? filtered.length 
-                    : mockTasks.filter(t => t.status === s).length;
+                  const count = s === 'all'
+                    ? filtered.length
+                    : tasks.filter(t => t.status === s).length;
                   return (
                     <button key={s} onClick={() => { setStatusFilter(s as TaskStatus | 'all'); setOpenDropdown(null); }}
                       className="w-full flex items-center justify-between text-left font-medium hover:bg-gray-100 rounded-lg transition-colors"
@@ -120,7 +137,7 @@ export function TaskList() {
                 {['all', ...Object.keys(PRIORITY_CONFIG)].map((p, idx) => {
                   const count = p === 'all'
                     ? filtered.length
-                    : mockTasks.filter(t => t.priority === p).length;
+                    : tasks.filter(t => t.priority === p).length;
                   return (
                     <button key={p} onClick={() => { setPriorityFilter(p as TaskPriority | 'all'); setOpenDropdown(null); }}
                       className="w-full flex items-center justify-between text-left font-medium hover:bg-gray-100 rounded-lg transition-colors"
@@ -166,7 +183,7 @@ export function TaskList() {
                   <td className="px-6 py-5">
                     <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{task.title}</p>
                     <div className="flex gap-1.5 mt-2">
-                      {task.tags.map((tag) => (
+                      {task.tags_list.map((tag) => (
                         <span key={tag} className="text-[10px] font-medium px-2.5 py-1 rounded-full"
                           style={{ background: 'var(--bg)', color: 'var(--text-secondary)' }}>
                           {tag}
@@ -175,12 +192,16 @@ export function TaskList() {
                     </div>
                   </td>
                   <td className="px-6 py-5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
-                        style={{ background: 'var(--primary)', color: '#fff' }}>
-                        {task.updatedBy.name.split(' ').map((n: string) => n[0]).join('')}
-                      </div>
-                      <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{task.updatedBy.name.split(' ')[0]}</span>
+                    <div className="flex items-center gap-2">
+                      {task.assignees.map((a) => (
+                        <div key={a.id} className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
+                          style={{ background: 'var(--primary)', color: '#fff' }}>
+                          {a.name.split(' ').map(n => n[0]).join('')}
+                        </div>
+                      ))}
+                      {task.assignees.length === 1 && (
+                        <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{task.assignees[0].name.split(' ')[0]}</span>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-5">
@@ -195,13 +216,13 @@ export function TaskList() {
                     </div>
                   </td>
                   <td className="px-6 py-5 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    {task.dueDate || '—'}
+                    {task.due_date || '—'}
                   </td>
                   <td className="px-6 py-5">
-                    {task.logCount > 0 ? (
+                    {task.log_count > 0 ? (
                       <span className="text-xs font-bold px-3 py-1.5 rounded-full"
                         style={{ background: 'rgba(123,104,238,0.1)', color: 'var(--primary)' }}>
-                        {task.logCount}
+                        {task.log_count}
                       </span>
                     ) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                   </td>
@@ -231,31 +252,45 @@ export function TaskList() {
               <div className="flex items-center justify-between gap-2 mb-3">
                 <div className="flex items-center flex-wrap gap-x-4 gap-y-1">
                   <div className="flex items-center gap-1.5">
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0"
-                      style={{ background: 'var(--primary)', color: '#fff' }}>
-                      {task.updatedBy.name.split(' ').map((n: string) => n[0]).join('')}
-                    </div>
-                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{task.updatedBy.name.split(' ')[0]}</span>
+                    {task.assignees.map((a) => (
+                      <div key={a.id} className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0"
+                        style={{ background: 'var(--primary)', color: '#fff' }}>
+                        {a.name.split(' ').map(n => n[0]).join('')}
+                      </div>
+                    ))}
+                    {task.assignees.length === 1 && (
+                      <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{task.assignees[0].name.split(' ')[0]}</span>
+                    )}
                   </div>
                   <div className={`flex items-center gap-1.5 text-[11px] font-semibold ${pc.color}`}>
                     <span className={`w-2 h-2 rounded-full ${pc.dot}`} />
                     {pc.label}
                   </div>
-                  {task.dueDate && (
-                    <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-muted)' }}><Calendar size={12} /> {task.dueDate}</span>
+                  {task.due_date && (
+                    <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-muted)' }}><Calendar size={12} /> {task.due_date}</span>
                   )}
-                  {task.logCount > 0 && (
+                  {task.log_count > 0 && (
                     <span className="flex items-center gap-1 text-[11px] font-bold" style={{ color: 'var(--primary)' }}>
-                      <FileText size={12} /> {task.logCount} logs
+                      <FileText size={12} /> {task.log_count} logs
                     </span>
                   )}
                 </div>
-                {task.updatedAt && (
+                {task.updated_at && (
                   <span className="shrink-0 flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-muted)' }}>
-                    <Clock size={12} /> {relativeDate(task.updatedAt)}
+                    <Clock size={12} /> {relativeDate(task.updated_at)}
                   </span>
                 )}
               </div>
+              {task.tags_list.length > 0 && (
+                <div className="flex gap-1.5">
+                  {task.tags_list.map((tag) => (
+                    <span key={tag} className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+                      style={{ background: 'var(--bg)', color: 'var(--text-secondary)' }}>
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           );
         })}
