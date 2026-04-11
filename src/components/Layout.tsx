@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { LayoutDashboard, CheckSquare, Users, Settings, LogOut } from 'lucide-react';
 import { CURRENT_USER } from '../types';
 

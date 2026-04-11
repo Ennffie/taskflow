@@ -7,14 +7,12 @@ import {
   Clock,
   Calendar,
   FileText,
-  ChevronDown,
 } from 'lucide-react';
 import type { LogEntry } from '../types';
 import {
   mockTasks,
   mockLogEntries,
   STATUS_CONFIG,
-  CURRENT_USER,
 } from '../types';
 
 const CATEGORY_CONFIG: Record<string, { label: string; color: string; bg: string; icon: string }> = {
