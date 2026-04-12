@@ -1,0 +1,140 @@
+import { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
+import type { TaskStatus, TaskPriority } from '../types';
+import { STATUS_CONFIG, PRIORITY_CONFIG } from '../types';
+import { fetchProfiles, createTask } from '../lib/api';
+import type { Profile } from '../lib/api';
+import { CURRENT_USER_ID } from '../lib/api';
+
+interface Props {
+  onClose: () => void;
+  onCreated: () => void;
+}
+
+export function NewTaskForm({ onClose, onCreated }: Props) {
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [status, setStatus] = useState<TaskStatus>('todo');
+  const [priority, setPriority] = useState<TaskPriority>('medium');
+  const [dueDate, setDueDate] = useState('');
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { fetchProfiles().then(setProfiles); }, []);
+
+  const toggleAssignee = (id: string) => {
+    setAssigneeIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const handleSubmit = async () => {
+    if (!title.trim()) return;
+    setSaving(true);
+    const tags = tagInput.split(',').map(t => t.trim()).filter(Boolean);
+    await createTask({
+      title: title.trim(),
+      description,
+      status,
+      priority,
+      due_date: dueDate || undefined,
+      assignee_ids: assigneeIds,
+      tags,
+      created_by: CURRENT_USER_ID,
+    });
+    setSaving(false);
+    onCreated();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative w-full max-w-lg rounded-2xl p-6 max-h-[90vh] overflow-y-auto" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-bold" style={{ color: 'var(--text)' }}>New Task</h3>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
+        </div>
+
+        <div className="space-y-4">
+          {/* Title */}
+          <div>
+            <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Title *</label>
+            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Task title..."
+              className="w-full px-4 py-3 rounded-xl text-sm focus:outline-none" style={{ border: '1px solid var(--border)' }} />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Description</label>
+            <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Task description..." rows={3}
+              className="w-full px-4 py-3 rounded-xl text-sm focus:outline-none resize-none" style={{ border: '1px solid var(--border)' }} />
+          </div>
+
+          {/* Status + Priority */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Status</label>
+              <select value={status} onChange={e => setStatus(e.target.value as TaskStatus)}
+                className="w-full px-4 py-3 rounded-xl text-sm focus:outline-none bg-white" style={{ border: '1px solid var(--border)' }}>
+                {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Priority</label>
+              <select value={priority} onChange={e => setPriority(e.target.value as TaskPriority)}
+                className="w-full px-4 py-3 rounded-xl text-sm focus:outline-none bg-white" style={{ border: '1px solid var(--border)' }}>
+                {Object.entries(PRIORITY_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Due Date */}
+          <div>
+            <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Due Date</label>
+            <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl text-sm focus:outline-none" style={{ border: '1px solid var(--border)' }} />
+          </div>
+
+          {/* Assignees */}
+          <div>
+            <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Assignees</label>
+            <div className="flex flex-wrap gap-2">
+              {profiles.map(p => (
+                <button key={p.id} onClick={() => toggleAssignee(p.id)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all"
+                  style={{
+                    background: assigneeIds.includes(p.id) ? 'var(--primary)' : 'var(--bg)',
+                    color: assigneeIds.includes(p.id) ? '#fff' : 'var(--text-secondary)',
+                    border: assigneeIds.includes(p.id) ? '1px solid var(--primary)' : '1px solid var(--border)',
+                  }}>
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-semibold"
+                    style={{ background: assigneeIds.includes(p.id) ? 'rgba(255,255,255,0.2)' : 'var(--primary)', color: '#fff' }}>
+                    {p.name.split(' ').map(n => n[0]).join('')}
+                  </div>
+                  {p.name.split(' ')[0]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Tags (comma separated)</label>
+            <input value={tagInput} onChange={e => setTagInput(e.target.value)} placeholder="Design, Mobile, Dashboard..."
+              className="w-full px-4 py-3 rounded-xl text-sm focus:outline-none" style={{ border: '1px solid var(--border)' }} />
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-3 pt-2">
+            <button onClick={onClose} className="px-5 py-3 rounded-xl text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Cancel</button>
+            <button onClick={handleSubmit} disabled={saving || !title.trim()}
+              className="px-6 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
+              style={{ background: 'var(--primary)' }}>
+              {saving ? 'Saving...' : 'Create Task'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

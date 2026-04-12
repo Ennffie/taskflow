@@ -54,6 +54,8 @@ export interface TaskWithData extends TaskRow {
   log_count: number;
 }
 
+// ============ READ ============
+
 export async function fetchProfiles(): Promise<Profile[]> {
   const { data, error } = await supabase.from('profiles').select('*');
   if (error) { console.error('fetchProfiles:', error); return []; }
@@ -106,7 +108,57 @@ export async function fetchLogEntries(taskId: string): Promise<(LogEntryRow & { 
   }));
 }
 
-export async function insertLogEntry(entry: {
+// ============ CREATE ============
+
+export async function createTask(params: {
+  title: string;
+  description?: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  due_date?: string;
+  assignee_ids: string[];
+  tags: string[];
+  created_by: string;
+}): Promise<TaskWithData | null> {
+  const { title, description, status, priority, due_date, assignee_ids, tags, created_by } = params;
+
+  // Insert task
+  const { data: taskData, error: taskErr } = await supabase.from('tasks').insert({
+    title,
+    description: description || null,
+    status,
+    priority,
+    due_date: due_date || null,
+    created_by,
+    updated_by: created_by,
+  }).select().single();
+
+  if (taskErr || !taskData) { console.error('createTask:', taskErr); return null; }
+
+  const taskId = taskData.id;
+
+  // Insert assignees
+  if (assignee_ids.length > 0) {
+    const { error: assignErr } = await supabase.from('task_assignees').insert(
+      assignee_ids.map(uid => ({ task_id: taskId, user_id: uid }))
+    );
+    if (assignErr) console.error('createTask assignees:', assignErr);
+  }
+
+  // Insert tags
+  if (tags.length > 0) {
+    const { error: tagErr } = await supabase.from('tags').insert(
+      tags.filter(t => t.trim()).map(name => ({ task_id: taskId, name: name.trim() }))
+    );
+    if (tagErr) console.error('createTask tags:', tagErr);
+  }
+
+  // Fetch complete task
+  const allTasks = await fetchTasks();
+  return allTasks.find(t => t.id === taskId) || null;
+}
+
+export async function insertLogEntry(params: {
   task_id: string;
   date: string;
   event: string;
@@ -115,7 +167,66 @@ export async function insertLogEntry(entry: {
   file_name?: string;
   created_by: string;
 }) {
-  const { data, error } = await supabase.from('log_entries').insert(entry).select();
+  const { data, error } = await supabase.from('log_entries').insert(params).select();
   if (error) { console.error('insertLogEntry:', error); return null; }
   return data;
 }
+
+// ============ UPDATE ============
+
+export async function updateTask(taskId: string, updates: {
+  title?: string;
+  description?: string;
+  status?: TaskStatus;
+  priority?: TaskPriority;
+  due_date?: string;
+  updated_by: string;
+}): Promise<boolean> {
+  const { error } = await supabase.from('tasks').update(updates).eq('id', taskId);
+  if (error) { console.error('updateTask:', error); return false; }
+  return true;
+}
+
+export async function updateTaskAssignees(taskId: string, assigneeIds: string[]): Promise<boolean> {
+  // Delete existing
+  await supabase.from('task_assignees').delete().eq('task_id', taskId);
+  // Insert new
+  if (assigneeIds.length > 0) {
+    const { error } = await supabase.from('task_assignees').insert(
+      assigneeIds.map(uid => ({ task_id: taskId, user_id: uid }))
+    );
+    if (error) { console.error('updateTaskAssignees:', error); return false; }
+  }
+  return true;
+}
+
+export async function updateTaskTags(taskId: string, tagNames: string[]): Promise<boolean> {
+  await supabase.from('tags').delete().eq('task_id', taskId);
+  const filtered = tagNames.filter(t => t.trim());
+  if (filtered.length > 0) {
+    const { error } = await supabase.from('tags').insert(
+      filtered.map(name => ({ task_id: taskId, name: name.trim() }))
+    );
+    if (error) { console.error('updateTaskTags:', error); return false; }
+  }
+  return true;
+}
+
+// ============ DELETE ============
+
+export async function deleteTask(taskId: string): Promise<boolean> {
+  const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+  if (error) { console.error('deleteTask:', error); return false; }
+  return true;
+}
+
+export async function deleteLogEntry(entryId: string): Promise<boolean> {
+  const { error } = await supabase.from('log_entries').delete().eq('id', entryId);
+  if (error) { console.error('deleteLogEntry:', error); return false; }
+  return true;
+}
+
+// ============ AUTH ============
+
+// Current user - hardcoded for now (will be replaced by Supabase Auth)
+export const CURRENT_USER_ID = 'a0000001-0000-0000-0000-000000000001'; // Enfield Law

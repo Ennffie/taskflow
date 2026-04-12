@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Paperclip, Clock, Calendar, FileText, Palette, Search, Users, Eye, FileEdit } from 'lucide-react';
 import { STATUS_CONFIG } from '../types';
-import { fetchTasks, fetchLogEntries } from '../lib/api';
+import { fetchTasks, fetchLogEntries, insertLogEntry } from '../lib/api';
 import type { TaskWithData } from '../lib/api';
 import type { LogEntryRow } from '../lib/api';
+import { CURRENT_USER_ID } from '../lib/api';
 
 const CAT: Record<string, { label: string; color: string; bg: string; icon: any }> = {
   design:   { label: 'Design',   color: '#7c3aed', bg: 'rgba(124,58,237,0.1)',  icon: Palette },
@@ -142,7 +143,23 @@ export function LogBook() {
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <button onClick={() => setShowForm(false)} className="px-5 py-3 rounded-xl text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Cancel</button>
-              <button onClick={() => { if (!form.event.trim()) return; alert('Saved!'); setShowForm(false); setForm({ date: new Date().toISOString().split('T')[0], event: '', category: 'design', timeSpent: '', fileName: '' }); }}
+              <button onClick={async () => {
+                if (!form.event.trim() || !taskId) return;
+                await insertLogEntry({
+                  task_id: taskId,
+                  date: form.date,
+                  event: form.event.trim(),
+                  category: form.category,
+                  time_spent: form.timeSpent || undefined,
+                  file_name: form.fileName || undefined,
+                  created_by: CURRENT_USER_ID,
+                });
+                setShowForm(false);
+                setForm({ date: new Date().toISOString().split('T')[0], event: '', category: 'design', timeSpent: '', fileName: '' });
+                // Reload entries
+                const logs = await fetchLogEntries(taskId);
+                setEntries(logs as LogEntryWithProfile[]);
+              }}
                 className="px-6 py-3 rounded-xl text-sm font-semibold text-white"
                 style={{ background: 'var(--primary)' }}>Save Entry</button>
             </div>

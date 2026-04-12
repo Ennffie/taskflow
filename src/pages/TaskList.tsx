@@ -5,6 +5,7 @@ import type { TaskStatus, TaskPriority } from '../types';
 import { STATUS_CONFIG, PRIORITY_CONFIG } from '../types';
 import { fetchTasks } from '../lib/api';
 import type { TaskWithData } from '../lib/api';
+import { NewTaskForm } from '../components/NewTaskForm';
 
 function relativeDate(dateStr: string): string {
   const today = new Date();
@@ -26,12 +27,12 @@ export function TaskList() {
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
   const [openDropdown, setOpenDropdown] = useState<'status' | 'priority' | null>(null);
+  const [showNewTask, setShowNewTask] = useState(false);
   const statusRef = useRef<HTMLDivElement>(null);
   const priorityRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    fetchTasks().then(data => { setTasks(data); setLoading(false); });
-  }, []);
+  const loadTasks = () => { fetchTasks().then(data => { setTasks(data); setLoading(false); }); };
+  useEffect(() => { loadTasks(); }, []);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -67,7 +68,7 @@ export function TaskList() {
         <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
           {filtered.length} task{filtered.length !== 1 ? 's' : ''}
         </p>
-        <button className="flex items-center gap-2 text-white px-4 py-2.5 rounded-lg text-sm font-semibold shadow-md transition-all hover:shadow-lg active:scale-[0.98]"
+        <button onClick={() => setShowNewTask(true)} className="flex items-center gap-2 text-white px-4 py-2.5 rounded-lg text-sm font-semibold shadow-md transition-all hover:shadow-lg active:scale-[0.98]"
           style={{ background: 'var(--primary)' }}>
           <Plus size={16} strokeWidth={2.5} />
           <span>New Task</span>
@@ -295,6 +296,11 @@ export function TaskList() {
           );
         })}
       </div>
+
+      {/* New Task Modal */}
+      {showNewTask && (
+        <NewTaskForm onClose={() => setShowNewTask(false)} onCreated={() => { setShowNewTask(false); loadTasks(); }} />
+      )}
     </div>
   );
 }
