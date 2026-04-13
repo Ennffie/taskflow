@@ -353,7 +353,7 @@ export function LogBook() {
             <p className="text-xs" style={{ color: 'var(--text-muted)', marginTop: '4px' }}>Click + to add your first entry</p>
           </div>
         ) : dates.map((date) => (
-          <div key={date} style={{ marginBottom: '40px' }}>
+          <div key={date} style={{ marginBottom: '56px' }}>
             <div className="flex items-center" style={{ gap: '12px', marginBottom: '20px' }}>
               <div className="w-3 h-3 rounded-full" style={{ background: 'var(--primary)' }} />
               <h4 className="text-sm font-bold" style={{ color: 'var(--text)' }}>{date}</h4>
