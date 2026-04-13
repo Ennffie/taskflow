@@ -352,8 +352,8 @@ export function LogBook() {
             <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>No log entries yet</p>
             <p className="text-xs" style={{ color: 'var(--text-muted)', marginTop: '4px' }}>Click + to add your first entry</p>
           </div>
-        ) : dates.map((date) => (
-          <div key={date} style={{ marginBottom: '56px' }}>
+        ) : dates.map((date, dateIndex) => (
+          <div key={date} style={{ marginBottom: dateIndex === dates.length - 1 ? '0' : '72px', paddingBottom: '16px' }}>
             <div className="flex items-center" style={{ gap: '12px', marginBottom: '20px' }}>
               <div className="w-3 h-3 rounded-full" style={{ background: 'var(--primary)' }} />
               <h4 className="text-sm font-bold" style={{ color: 'var(--text)' }}>{date}</h4>
