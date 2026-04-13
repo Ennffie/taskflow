@@ -49,7 +49,7 @@ export function NewTaskForm({ onClose, onCreated }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full max-w-lg rounded-2xl p-6 max-h-[90vh] overflow-y-auto" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      <div className="relative w-full max-w-lg rounded-2xl max-h-[90vh] overflow-y-auto" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '32px 24px' }}>
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold" style={{ color: 'var(--text)' }}>New Task</h3>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
@@ -126,10 +126,10 @@ export function NewTaskForm({ onClose, onCreated }: Props) {
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-2">
-            <button onClick={onClose} className="px-5 py-3 rounded-xl text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Cancel</button>
+            <button onClick={onClose} className="rounded-xl text-sm font-medium" style={{ color: 'var(--text-secondary)', padding: '12px 24px' }}>Cancel</button>
             <button onClick={handleSubmit} disabled={saving || !title.trim()}
-              className="px-6 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
-              style={{ background: 'var(--primary)' }}>
+              className="rounded-xl text-sm font-semibold text-white disabled:opacity-50"
+              style={{ background: 'var(--primary)', padding: '12px 28px' }}>
               {saving ? 'Saving...' : 'Create Task'}
             </button>
           </div>

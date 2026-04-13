@@ -1,39 +1,134 @@
 import type { ReactNode } from 'react';
-import { LayoutDashboard, CheckSquare, Users, Settings, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, FileText, Settings, LogOut, Menu, X, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
-import { CURRENT_USER } from '../types';
-
-const navItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/', active: true },
-  { icon: CheckSquare, label: 'Tasks', path: '/' },
-  { icon: Users, label: 'Team', path: '/' },
-  { icon: Settings, label: 'Settings', path: '/' },
-];
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 export function Layout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { profile, signOut, isAdmin } = useAuth();
+  const isTaskList = location.pathname === '/';
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
+  };
 
   return (
     <div className="min-h-screen flex">
+      {/* Desktop Sidebar - Always visible on lg+ */}
+      <aside className="hidden lg:flex lg:flex-col w-[260px] flex-shrink-0" style={{ background: 'var(--sidebar-bg)' }}>
+        <div className="h-[72px] flex items-center px-6">
+          <span className="font-bold text-lg text-white tracking-tight">PMC</span>
+        </div>
+        <nav className="flex-1 px-4 py-2 space-y-2">
+          <button
+            onClick={() => alert('Coming Soon')}
+            className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all text-left"
+            style={{ color: 'var(--sidebar-text)', background: 'transparent' }}>
+            <LayoutDashboard size={20} strokeWidth={1.8} />
+            Dashboard
+          </button>
+          <button
+            onClick={() => navigate('/')}
+            className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all text-left"
+            style={{
+              color: isTaskList ? 'var(--sidebar-active)' : 'var(--sidebar-text)',
+              background: isTaskList ? 'var(--sidebar-hover)' : 'transparent',
+            }}>
+            <CheckSquare size={20} strokeWidth={isTaskList ? 2.2 : 1.8} />
+            Tasks
+          </button>
+          <button
+            onClick={() => alert('Coming Soon')}
+            className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all text-left"
+            style={{ color: 'var(--sidebar-text)', background: 'transparent' }}>
+            <FileText size={20} strokeWidth={1.8} />
+            My Log
+          </button>
+          <button
+            onClick={() => navigate('/settings')}
+            className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all text-left"
+            style={{ color: location.pathname === '/settings' ? 'var(--sidebar-active)' : 'var(--sidebar-text)', background: location.pathname === '/settings' ? 'var(--sidebar-hover)' : 'transparent' }}>
+            <Settings size={20} strokeWidth={location.pathname === '/settings' ? 2.2 : 1.8} />
+            Settings
+          </button>
+        </nav>
+        <div className="mt-auto p-4 mx-4 mb-4 rounded-xl" style={{ background: 'var(--sidebar-hover)' }}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold" style={{ background: 'var(--primary)', color: '#fff' }}>
+              {profile?.name?.charAt(0) || 'U'}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-white truncate">{profile?.name || 'User'}</p>
+              <p className="text-xs" style={{ color: 'var(--sidebar-text)' }}>{profile?.role || 'Member'}</p>
+            </div>
+            <button onClick={handleSignOut} style={{ color: 'var(--sidebar-text)' }} className="hover:text-white transition-colors">
+              <LogOut size={16} />
+            </button>
+          </div>
+        </div>
+      </aside>
+
       {/* Main */}
       <main className="flex-1 min-h-screen">
         {/* Top Bar */}
         <header className="h-[72px] flex items-center justify-between" style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', paddingLeft: '20px', paddingRight: '20px' }}>
           <div className="flex items-center gap-3">
-            <button className="p-1" onClick={() => setSidebarOpen(true)}>
+            {/* Mobile: Hamburger, Desktop: No hamburger */}
+            <button className="p-1 lg:hidden" onClick={() => setSidebarOpen(true)}>
               <Menu size={22} />
             </button>
             <h1 className="text-lg font-bold" style={{ color: 'var(--text)' }}>PMC Tasks Tracker</h1>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs font-semibold px-3 py-1.5 rounded-full" style={{ background: 'rgba(123,104,238,0.1)', color: 'var(--primary)' }}>
-              Admin View
+              {profile?.role === 'admin' ? 'Admin' : profile?.role === 'viewer' ? 'Viewer' : 'Member'} View
             </span>
+            {/* User Menu */}
+            <div className="relative">
+              <button 
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold" style={{ background: 'var(--primary)', color: '#fff' }}>
+                  {profile?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2) || 'U'}
+                </div>
+                <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} />
+              </button>
+              {userMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 w-48 rounded-xl shadow-lg z-50" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                  <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+                    <div className="font-medium text-sm" style={{ color: 'var(--text)' }}>{profile?.name}</div>
+                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{profile?.email}</div>
+                  </div>
+                  {isAdmin && (
+                    <button 
+                      onClick={() => { setUserMenuOpen(false); navigate('/settings'); }}
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm hover:bg-gray-50"
+                      style={{ color: 'var(--text)' }}
+                    >
+                      <Settings size={16} /> Settings
+                    </button>
+                  )}
+                  <button 
+                    onClick={handleSignOut}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm hover:bg-gray-50"
+                    style={{ color: '#ef4444' }}
+                  >
+                    <LogOut size={16} /> Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
         {/* Content */}
-        <div className="p-4 lg:p-8 min-h-screen" style={{ background: 'var(--bg)' }}>
+        <div className="min-h-screen" style={{ background: 'var(--bg)', padding: '20px 20px 100px 20px' }}>
           <div className="max-w-5xl mx-auto">
             {children}
           </div>
@@ -46,44 +141,58 @@ export function Layout({ children }: { children: ReactNode }) {
           <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
           <aside className="relative w-[260px] flex flex-col" style={{ background: 'var(--sidebar-bg)' }}>
             <div className="h-[72px] flex items-center justify-between px-6">
-              <div className="flex items-center">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'var(--primary)' }}>
-                  <span className="text-white font-bold text-base">T</span>
-                </div>
-                <span className="ml-3 font-bold text-lg text-white tracking-tight">TaskFlow</span>
-              </div>
+              <span className="font-bold text-lg text-white tracking-tight">PMC</span>
               <button onClick={() => setSidebarOpen(false)} style={{ color: 'var(--sidebar-text)' }} className="hover:text-white transition-colors">
                 <X size={20} />
               </button>
             </div>
-            <nav className="flex-1 px-4 py-2 space-y-1">
-              {navItems.map((item) => (
-                <a
-                  key={item.label}
-                  href={item.path}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all"
-                  style={{
-                    color: item.active ? 'var(--sidebar-active)' : 'var(--sidebar-text)',
-                    background: item.active ? 'var(--sidebar-hover)' : 'transparent',
-                  }}
-                  onMouseEnter={(e) => { if (!item.active) e.currentTarget.style.background = 'var(--sidebar-hover)'; }}
-                  onMouseLeave={(e) => { if (!item.active) e.currentTarget.style.background = 'transparent'; }}
-                >
-                  <item.icon size={20} strokeWidth={item.active ? 2.2 : 1.8} />
-                  {item.label}
-                </a>
-              ))}
+            <nav className="flex-1 px-4 py-2 space-y-2">
+              {/* Dashboard - always inactive for now */}
+              <button
+                onClick={() => alert('Coming Soon')}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left"
+                style={{ color: 'var(--sidebar-text)', background: 'transparent' }}>
+                <LayoutDashboard size={20} strokeWidth={1.8} />
+                Dashboard
+              </button>
+              {/* Tasks - active on task routes */}
+              <button
+                onClick={() => { setSidebarOpen(false); navigate('/'); }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left"
+                style={{
+                  color: isTaskList ? 'var(--sidebar-active)' : 'var(--sidebar-text)',
+                  background: isTaskList ? 'var(--sidebar-hover)' : 'transparent',
+                }}>
+                <CheckSquare size={20} strokeWidth={isTaskList ? 2.2 : 1.8} />
+                Tasks
+              </button>
+              {/* My Log */}
+              <button
+                onClick={() => alert('Coming Soon')}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left"
+                style={{ color: 'var(--sidebar-text)', background: 'transparent' }}>
+                <FileText size={20} strokeWidth={1.8} />
+                My Log
+              </button>
+              {/* Settings */}
+              <button
+                onClick={() => { setSidebarOpen(false); navigate('/settings'); }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left"
+                style={{ color: location.pathname === '/settings' ? 'var(--sidebar-active)' : 'var(--sidebar-text)', background: location.pathname === '/settings' ? 'var(--sidebar-hover)' : 'transparent' }}>
+                <Settings size={20} strokeWidth={location.pathname === '/settings' ? 2.2 : 1.8} />
+                Settings
+              </button>
             </nav>
             <div className="p-4 mx-3 mb-3 rounded-xl" style={{ background: 'var(--sidebar-hover)' }}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold" style={{ background: 'var(--primary)', color: '#fff' }}>
-                  {CURRENT_USER.name.charAt(0)}
+                  {profile?.name?.charAt(0) || 'U'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{CURRENT_USER.name}</p>
-                  <p className="text-xs" style={{ color: 'var(--sidebar-text)' }}>Admin</p>
+                  <p className="text-sm font-medium text-white truncate">{profile?.name || 'User'}</p>
+                  <p className="text-xs" style={{ color: 'var(--sidebar-text)' }}>{profile?.role || 'Member'}</p>
                 </div>
-                <button style={{ color: 'var(--sidebar-text)' }} className="hover:text-white transition-colors">
+                <button onClick={handleSignOut} style={{ color: 'var(--sidebar-text)' }} className="hover:text-white transition-colors">
                   <LogOut size={16} />
                 </button>
               </div>
@@ -94,14 +203,32 @@ export function Layout({ children }: { children: ReactNode }) {
 
       {/* Bottom Nav — Mobile only */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 flex justify-around items-end pb-safe pt-5 px-4" style={{ background: 'var(--surface)', borderTop: '1px solid var(--border)', minHeight: '80px' }}>
-        {navItems.map((item) => (
-          <a key={item.label} href={item.path} className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-lg"
-            style={{ color: item.active ? 'var(--primary)' : 'var(--text-muted)' }}>
-            <item.icon size={22} />
-            <span className="text-[10px] font-medium">{item.label}</span>
-          </a>
-        ))}
+        <button onClick={() => alert('Coming Soon')} className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-lg"
+          style={{ color: 'var(--text-muted)' }}>
+          <LayoutDashboard size={22} />
+          <span className="text-[10px] font-medium">Dashboard</span>
+        </button>
+        <button 
+          onClick={() => isTaskList ? window.location.reload() : navigate('/')}
+          className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-lg"
+          style={{ color: isTaskList ? 'var(--primary)' : 'var(--text-muted)' }}>
+          <CheckSquare size={22} />
+          <span className="text-[10px] font-medium">Tasks</span>
+        </button>
+        <button onClick={() => alert('Coming Soon')} className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-lg"
+          style={{ color: 'var(--text-muted)' }}>
+          <FileText size={22} />
+          <span className="text-[10px] font-medium">My Log</span>
+        </button>
+        <button 
+          onClick={() => navigate('/settings')}
+          className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-lg"
+          style={{ color: location.pathname === '/settings' ? 'var(--primary)' : 'var(--text-muted)' }}>
+          <Settings size={22} />
+          <span className="text-[10px] font-medium">Settings</span>
+        </button>
       </nav>
+
     </div>
   );
 }

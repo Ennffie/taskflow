@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Paperclip, Clock, Calendar, FileText, Palette, Search, Users, Eye, FileEdit } from 'lucide-react';
-import { STATUS_CONFIG } from '../types';
-import { fetchTasks, fetchLogEntries, insertLogEntry } from '../lib/api';
-import type { TaskWithData } from '../lib/api';
+import { ArrowLeft, Plus, Clock, Calendar, FileText, Palette, Search, Users, Eye, FileEdit, Edit2, X, Link2, Trash2 } from 'lucide-react';
+import { STATUS_CONFIG, PRIORITY_CONFIG } from '../types';
+import { fetchTasks, fetchLogEntries, insertLogEntry, updateLogEntry, updateTask, fetchProfiles, updateTaskAssignees, deleteLogEntry } from '../lib/api';
+import type { TaskWithData, Profile } from '../lib/api';
 import type { LogEntryRow } from '../lib/api';
 import { CURRENT_USER_ID } from '../lib/api';
 
@@ -26,17 +26,24 @@ export function LogBook() {
   const [entries, setEntries] = useState<LogEntryWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showEditTask, setShowEditTask] = useState(false);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [form, setForm] = useState({ date: new Date().toISOString().split('T')[0], event: '', category: 'design', timeSpent: '', fileName: '' });
+  const [editingLogId, setEditingLogId] = useState<string | null>(null);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [editForm, setEditForm] = useState({ title: '', description: '', status: 'todo' as any, priority: 'medium' as any, assigneeIds: [] as string[] });
 
   useEffect(() => {
     if (!taskId) return;
     Promise.all([
       fetchTasks(),
       fetchLogEntries(taskId),
-    ]).then(([tasks, logs]) => {
+      fetchProfiles(),
+    ]).then(([tasks, logs, profs]) => {
       const t = tasks.find(t => t.id === taskId);
       setTask(t || null);
       setEntries(logs as LogEntryWithProfile[]);
+      setProfiles(profs);
       setLoading(false);
     });
   }, [taskId]);
@@ -52,18 +59,103 @@ export function LogBook() {
   const dates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
 
   return (
-    <div className="pb-24 lg:pb-0" style={{ paddingLeft: '20px', paddingRight: '20px' }}>
+    <div className="pb-24 lg:pb-0">
+      <div className="max-w-5xl mx-auto">
       {/* Back */}
-      <button onClick={() => navigate('/')} className="flex items-center gap-2 text-sm font-medium mb-6 transition-colors"
-        style={{ color: 'var(--primary)' }}>
-        <ArrowLeft size={16} /> Back to Tasks
+      <button onClick={() => navigate('/')} className="flex items-center gap-2 font-medium mb-6 transition-colors"
+        style={{ color: 'var(--primary)', padding: '10px 16px', fontSize: '15px' }}>
+        <ArrowLeft size={18} /> Back to Tasks
       </button>
 
-      {/* Task Header Card */}
-      <div className="rounded-2xl p-6 md:p-8 mb-8" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      {/* Edit Task Inline Form */}
+      {showEditTask && task && (
+        <div className="rounded-2xl max-h-[80vh] overflow-y-auto mb-4" style={{ background: 'var(--surface)', border: '2px solid var(--primary)', padding: '32px 24px' }}>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-base font-bold" style={{ color: 'var(--text)' }}>Edit Task</h3>
+            <button onClick={() => setShowEditTask(false)} style={{ padding: 8 }}><X size={18} style={{ color: 'var(--text-muted)' }} /></button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, display: 'block', color: 'var(--text-muted)' }}>Title</label>
+              <input value={editForm.title} onChange={e => setEditForm({...editForm, title: e.target.value})}
+                style={{ width: '100%', padding: '14px 18px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 14, boxSizing: 'border-box' }} />
+            </div>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, display: 'block', color: 'var(--text-muted)' }}>Description</label>
+              <textarea value={editForm.description} onChange={e => setEditForm({...editForm, description: e.target.value})} rows={3}
+                style={{ width: '100%', padding: '14px 18px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 14, boxSizing: 'border-box' }} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, display: 'block', color: 'var(--text-muted)' }}>Status</label>
+                <select value={editForm.status} onChange={e => setEditForm({...editForm, status: e.target.value as any})}
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 14, boxSizing: 'border-box' }}>
+                  {Object.keys(STATUS_CONFIG).map(s => <option key={s} value={s}>{STATUS_CONFIG[s as keyof typeof STATUS_CONFIG].label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, display: 'block', color: 'var(--text-muted)' }}>Priority</label>
+                <select value={editForm.priority} onChange={e => setEditForm({...editForm, priority: e.target.value as any})}
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 14, boxSizing: 'border-box' }}>
+                  {Object.keys(PRIORITY_CONFIG).map(p => <option key={p} value={p}>{PRIORITY_CONFIG[p as keyof typeof PRIORITY_CONFIG].label}</option>)}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, display: 'block', color: 'var(--text-muted)' }}>Assignees</label>
+              <div className="flex flex-wrap gap-2">
+                {profiles.map(p => (
+                  <button key={p.id} onClick={() => {
+                    const ids = editForm.assigneeIds.includes(p.id) 
+                      ? editForm.assigneeIds.filter(id => id !== p.id)
+                      : [...editForm.assigneeIds, p.id];
+                    setEditForm({...editForm, assigneeIds: ids});
+                  }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                  style={{ background: editForm.assigneeIds.includes(p.id) ? 'var(--primary)' : 'var(--bg)', border: '1px solid var(--border)', color: editForm.assigneeIds.includes(p.id) ? '#fff' : 'var(--text)' }}>
+                    {p.name.split(' ')[0]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 mt-8">
+            <button onClick={() => setShowEditTask(false)} style={{ padding: '12px 24px', borderRadius: 12, color: 'var(--text-secondary)', fontSize: 14, fontWeight: 500, background: 'transparent', border: 'none', cursor: 'pointer' }}>Cancel</button>
+            <button onClick={async () => {
+              await updateTask(task.id, { title: editForm.title, description: editForm.description, status: editForm.status, priority: editForm.priority, updated_by: CURRENT_USER_ID });
+              await updateTaskAssignees(task.id, editForm.assigneeIds);
+              setShowEditTask(false);
+              const tasks = await fetchTasks();
+              setTask(tasks.find(t => t.id === taskId) || null);
+            }} style={{ padding: '12px 28px', borderRadius: 12, background: 'var(--primary)', color: 'white', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}>Save</button>
+          </div>
+        </div>
+      )}
+
+      {/* Task Header Card - hidden when editing */}
+      {!showEditTask && task && (
+      <>
+      <div className="rounded-2xl p-6 md:p-8 mb-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="flex-1">
-            <h2 className="text-xl md:text-2xl font-bold mb-2" style={{ color: 'var(--text)' }}>{task.title}</h2>
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <h2 className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text)' }}>{task.title}</h2>
+              <button 
+                onClick={() => {
+                  setEditForm({ 
+                    title: task.title, 
+                    description: task.description || '', 
+                    status: task.status, 
+                    priority: task.priority, 
+                    assigneeIds: task.assignees.map(a => a.id)
+                  });
+                  setShowEditTask(true);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors hover:bg-gray-50"
+                style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
+                <Edit2 size={12} /> Edit
+              </button>
+            </div>
             {task.description && <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{task.description}</p>}
           </div>
           <span className={`shrink-0 inline-flex px-4 py-2 rounded-xl text-xs font-bold ${sc.bg} ${sc.color}`}>
@@ -71,15 +163,30 @@ export function LogBook() {
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-5 mt-6 pt-6" style={{ borderTop: '1px solid var(--border)' }}>
-          <div className="flex items-center gap-2.5">
-            {task.updated_by_profile && (
-              <>
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold" style={{ background: 'var(--primary)', color: '#fff' }}>
-                  {task.updated_by_profile.name.split(' ').map(n => n[0]).join('')}
+          {task.assignees.length > 0 && (
+            <div className="flex items-center gap-2.5">
+              {task.assignees.length === 1 ? (
+                <>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold" style={{ background: 'var(--primary)', color: '#fff' }}>
+                    {task.assignees[0].name.split(' ').map(n => n[0]).join('')}
+                  </div>
+                  <span className="text-sm font-medium">{task.assignees[0].name}</span>
+                </>
+              ) : (
+                <div className="flex -space-x-2">
+                  {task.assignees.map((a, i) => (
+                    <div key={a.id} className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold border-2" 
+                      style={{ background: 'var(--primary)', color: '#fff', borderColor: 'var(--surface)', zIndex: task.assignees.length - i }}>
+                      {a.name.split(' ').map(n => n[0]).join('')}
+                    </div>
+                  ))}
                 </div>
-                <span className="text-sm font-medium">{task.updated_by_profile.name}</span>
-              </>
-            )}
+              )}
+            </div>
+          )}
+          <div className={`flex items-center gap-1.5 text-xs font-semibold ${PRIORITY_CONFIG[task.priority].color}`}>
+            <span className={`w-2 h-2 rounded-full ${PRIORITY_CONFIG[task.priority].dot}`} />
+            {PRIORITY_CONFIG[task.priority].label}
           </div>
           {task.due_date && (
             <span className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
@@ -91,11 +198,21 @@ export function LogBook() {
           </span>
         </div>
       </div>
-
-      {/* New Entry Form */}
+      </>
+      )}
       {showForm && (
-        <div className="rounded-2xl p-6 md:p-8 mb-8" style={{ background: 'var(--surface)', border: '2px solid var(--primary)' }}>
-          <h3 className="text-base font-bold mb-5" style={{ color: 'var(--text)' }}>New Log Entry</h3>
+        <div className="rounded-2xl max-h-[80vh] overflow-y-auto mb-8" style={{ background: 'var(--surface)', border: '2px solid var(--primary)', padding: '32px 24px' }}>
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-base font-bold" style={{ color: 'var(--text)' }}>{editingLogId ? 'Edit Log Entry' : 'New Log Entry'}</h3>
+            {editingLogId && (
+              <button 
+                onClick={() => setShowConfirmDelete(true)}
+                className="text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
+                style={{ color: '#ef4444', background: 'rgba(239,68,68,0.1)' }}>
+                Delete
+              </button>
+            )}
+          </div>
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -122,46 +239,67 @@ export function LogBook() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>File Attachment</label>
-                <label className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm cursor-pointer transition-colors hover:bg-gray-50"
-                  style={{ border: '1px dashed var(--border)', color: 'var(--text-secondary)' }}>
-                  <Paperclip size={15} />
-                  <span className="truncate">{form.fileName || 'Choose file...'}</span>
-                  <input type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setForm({ ...form, fileName: f.name }); }} />
-                </label>
+                <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>File / Link</label>
+                <div className="relative">
+                  <Link2 size={15} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+                  <input type="url" value={form.fileName} onChange={(e) => setForm({ ...form, fileName: e.target.value })}
+                    placeholder="https://..."
+                    className="w-full py-3 rounded-xl text-sm focus:outline-none"
+                    style={{ border: '1px solid var(--border)', paddingLeft: '40px', paddingRight: '16px' }} />
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Time Spent</label>
                 <div className="relative">
                   <Clock size={15} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
-                  <input type="text" value={form.timeSpent} onChange={(e) => setForm({ ...form, timeSpent: e.target.value })}
-                    placeholder="e.g. 02:30"
-                    className="w-full pl-10 pr-4 py-3 rounded-xl text-sm focus:outline-none"
-                    style={{ border: '1px solid var(--border)' }} />
+                  <select value={form.timeSpent} onChange={(e) => setForm({ ...form, timeSpent: e.target.value })}
+                    className="w-full py-3 rounded-xl text-sm focus:outline-none bg-white appearance-none"
+                    style={{ border: '1px solid var(--border)', paddingLeft: '40px', paddingRight: '16px' }}>
+                    <option value="">Select time...</option>
+                    {[15,30,45,60,75,90,105,120,135,150,165,180,210,240,300,360,420,480].map(mins => {
+                      const h = Math.floor(mins / 60);
+                      const m = mins % 60;
+                      const label = h > 0 ? (m > 0 ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
+                      return <option key={mins} value={label}>{label}</option>;
+                    })}
+                  </select>
                 </div>
               </div>
             </div>
             <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setShowForm(false)} className="px-5 py-3 rounded-xl text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Cancel</button>
+              <button onClick={() => { setShowForm(false); setEditingLogId(null); }} className="rounded-xl text-sm font-medium" style={{ color: 'var(--text-secondary)', padding: '12px 24px' }}>Cancel</button>
               <button onClick={async () => {
                 if (!form.event.trim() || !taskId) return;
-                await insertLogEntry({
-                  task_id: taskId,
-                  date: form.date,
-                  event: form.event.trim(),
-                  category: form.category,
-                  time_spent: form.timeSpent || undefined,
-                  file_name: form.fileName || undefined,
-                  created_by: CURRENT_USER_ID,
-                });
+                if (editingLogId) {
+                  // Update existing log
+                  await updateLogEntry(editingLogId, {
+                    date: form.date,
+                    event: form.event.trim(),
+                    category: form.category,
+                    time_spent: form.timeSpent || undefined,
+                    file_name: form.fileName || undefined,
+                  });
+                } else {
+                  // Insert new log
+                  await insertLogEntry({
+                    task_id: taskId,
+                    date: form.date,
+                    event: form.event.trim(),
+                    category: form.category,
+                    time_spent: form.timeSpent || undefined,
+                    file_name: form.fileName || undefined,
+                    created_by: CURRENT_USER_ID,
+                  });
+                }
                 setShowForm(false);
+                setEditingLogId(null);
                 setForm({ date: new Date().toISOString().split('T')[0], event: '', category: 'design', timeSpent: '', fileName: '' });
                 // Reload entries
                 const logs = await fetchLogEntries(taskId);
                 setEntries(logs as LogEntryWithProfile[]);
               }}
-                className="px-6 py-3 rounded-xl text-sm font-semibold text-white"
-                style={{ background: 'var(--primary)' }}>Save Entry</button>
+                className="rounded-xl text-sm font-semibold text-white"
+                style={{ background: 'var(--primary)', padding: '12px 28px' }}>{editingLogId ? 'Update Entry' : 'Save Entry'}</button>
             </div>
           </div>
         </div>
@@ -196,13 +334,27 @@ export function LogBook() {
                 {grouped[date].length} entr{grouped[date].length !== 1 ? 'ies' : 'y'}
               </span>
             </div>
-            <div className="ml-1.5 pl-8 space-y-3" style={{ borderLeft: '2px solid var(--border)' }}>
+            <div className="ml-1.5 pl-8 space-y-4" style={{ borderLeft: '2px solid var(--border)' }}>
               {grouped[date].map((entry) => {
                 const cat = CAT[entry.category || 'other'];
                 const creatorName = entry.created_by_profile?.name || 'Unknown';
                 return (
-                  <div key={entry.id} className="relative rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                    <div className="absolute -left-[34px] top-6 w-3.5 h-3.5 rounded-full border-[3px] border-white" style={{ background: 'var(--primary)' }} />
+                  <div key={entry.id} 
+                    onClick={() => {
+                      setEditingLogId(entry.id);
+                      setForm({ 
+                        date: entry.date, 
+                        event: entry.event, 
+                        category: entry.category || 'design', 
+                        timeSpent: entry.time_spent || '', 
+                        fileName: entry.file_name || ''
+                      });
+                      setShowForm(true);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="relative rounded-2xl p-5 cursor-pointer hover:shadow-md transition-shadow z-10" 
+                    style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                    <div className="absolute -left-[34px] top-6 w-3.5 h-3.5 rounded-full border-[3px] border-white z-0" style={{ background: 'var(--primary)' }} />
                     <div className="flex items-center gap-2 mb-3">
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold"
                         style={{ background: cat.bg, color: cat.color }}>
@@ -213,19 +365,19 @@ export function LogBook() {
                           <Clock size={11} /> {entry.time_spent}
                         </span>
                       )}
+                      <div className="flex items-center gap-1.5 ml-auto">
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-semibold" style={{ background: 'var(--primary)', color: '#fff' }}>
+                          {creatorName.charAt(0)}
+                        </div>
+                        <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{creatorName}</span>
+                      </div>
                     </div>
                     <p className="text-sm leading-relaxed mb-2" style={{ color: 'var(--text)' }}>{entry.event}</p>
                     {entry.file_name && (
                       <div className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--primary)' }}>
-                        <Paperclip size={12} /> {entry.file_name}
+                        <Link2 size={12} /> {entry.file_name}
                       </div>
                     )}
-                    <div className="flex items-center gap-2 mt-4 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-semibold" style={{ background: 'var(--primary)', color: '#fff' }}>
-                        {creatorName.charAt(0)}
-                      </div>
-                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{creatorName}</span>
-                    </div>
                   </div>
                 );
               })}
@@ -234,12 +386,46 @@ export function LogBook() {
         ))}
       </div>
 
+      {/* Confirm Delete Modal */}
+      {showConfirmDelete && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50" onClick={() => setShowConfirmDelete(false)}>
+          <div className="w-full max-w-sm rounded-2xl" style={{ background: 'var(--surface)', padding: '32px 28px' }} onClick={e => e.stopPropagation()}>
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mb-4" style={{ background: 'rgba(239,68,68,0.1)' }}>
+                <Trash2 size={22} style={{ color: '#ef4444' }} />
+              </div>
+              <h4 className="text-base font-bold mb-2" style={{ color: 'var(--text)' }}>Delete Log Entry</h4>
+              <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>Are you sure you want to delete this entry? This action cannot be undone.</p>
+              <div className="flex w-full gap-3">
+                <button onClick={() => setShowConfirmDelete(false)} 
+                  className="flex-1 rounded-xl text-sm font-medium" 
+                  style={{ padding: '12px 0', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>Cancel</button>
+                <button onClick={async () => {
+                  if (editingLogId) {
+                    await deleteLogEntry(editingLogId);
+                    setEditingLogId(null);
+                    setShowForm(false);
+                    setForm({ date: new Date().toISOString().split('T')[0], event: '', category: 'design', timeSpent: '', fileName: '' });
+                    const logs = await fetchLogEntries(taskId || '');
+                    setEntries(logs as LogEntryWithProfile[]);
+                  }
+                  setShowConfirmDelete(false);
+                }} 
+                  className="flex-1 rounded-xl text-sm font-medium text-white" 
+                  style={{ padding: '12px 0', background: '#ef4444' }}>Confirm</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* FAB — Mobile */}
       <button onClick={() => setShowForm(!showForm)}
-        className="md:hidden fixed bottom-20 right-5 w-14 h-14 rounded-2xl text-white shadow-xl flex items-center justify-center z-40 active:scale-95 transition-transform"
+        className="md:hidden fixed bottom-20 right-5 w-14 h-14 rounded-full text-white shadow-xl flex items-center justify-center z-40 active:scale-95 transition-transform"
         style={{ background: 'var(--primary)' }}>
         <Plus size={24} />
       </button>
+      </div>
     </div>
   );
 }

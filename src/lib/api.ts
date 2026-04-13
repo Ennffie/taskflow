@@ -108,6 +108,12 @@ export async function fetchLogEntries(taskId: string): Promise<(LogEntryRow & { 
   }));
 }
 
+export async function fetchAllLogEntries(): Promise<{ id: string; task_id: string; date: string; created_by: string }[]> {
+  const { data, error } = await supabase.from('log_entries').select('id, task_id, date, created_by');
+  if (error) { console.error('fetchAllLogEntries:', error); return []; }
+  return data || [];
+}
+
 // ============ CREATE ============
 
 export async function createTask(params: {
@@ -169,6 +175,18 @@ export async function insertLogEntry(params: {
 }) {
   const { data, error } = await supabase.from('log_entries').insert(params).select();
   if (error) { console.error('insertLogEntry:', error); return null; }
+  return data;
+}
+
+export async function updateLogEntry(logId: string, updates: {
+  date?: string;
+  event?: string;
+  category?: string;
+  time_spent?: string;
+  file_name?: string;
+}) {
+  const { data, error } = await supabase.from('log_entries').update(updates).eq('id', logId).select();
+  if (error) { console.error('updateLogEntry:', error); return null; }
   return data;
 }
 
