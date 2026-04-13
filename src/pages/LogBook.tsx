@@ -353,15 +353,15 @@ export function LogBook() {
             <p className="text-xs" style={{ color: 'var(--text-muted)', marginTop: '4px' }}>Click + to add your first entry</p>
           </div>
         ) : dates.map((date) => (
-          <div key={date} style={{ marginBottom: '32px' }}>
-            <div className="flex items-center" style={{ gap: '12px', marginBottom: '16px' }}>
+          <div key={date} style={{ marginBottom: '40px' }}>
+            <div className="flex items-center" style={{ gap: '12px', marginBottom: '20px' }}>
               <div className="w-3 h-3 rounded-full" style={{ background: 'var(--primary)' }} />
               <h4 className="text-sm font-bold" style={{ color: 'var(--text)' }}>{date}</h4>
               <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
                 {grouped[date].length} entr{grouped[date].length !== 1 ? 'ies' : 'y'}
               </span>
             </div>
-            <div className="ml-1.5" style={{ paddingLeft: '32px', borderLeft: '2px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="ml-1.5" style={{ paddingLeft: '32px', borderLeft: '2px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {grouped[date].map((entry) => {
                 const cat = CAT[entry.category || 'other'];
                 const creatorName = entry.created_by_profile?.name || 'Unknown';
@@ -381,35 +381,45 @@ export function LogBook() {
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                     className="relative rounded-2xl cursor-pointer hover:shadow-md transition-shadow z-10" 
-                    style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '20px' }}>
-                    <div className="flex items-center" style={{ gap: '8px', marginBottom: '12px' }}>
-                      <span className="inline-flex items-center rounded-lg text-[11px] font-semibold"
-                        style={{ background: cat.bg, color: cat.color, gap: '4px', padding: '4px 10px' }}>
-                        {cat.label}
-                      </span>
-                      {entry.time_spent && (
-                        <span className="flex items-center text-[11px]" style={{ color: 'var(--text-muted)', gap: '4px' }}>
-                          <Clock size={11} /> {entry.time_spent}
+                    style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '24px' }}>
+                    {/* Header: Category + Status + User */}
+                    <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
+                      <div className="flex items-center" style={{ gap: '10px' }}>
+                        <span className="inline-flex items-center rounded-lg text-[11px] font-semibold"
+                          style={{ background: cat.bg, color: cat.color, gap: '4px', padding: '6px 12px' }}>
+                          {cat.label}
                         </span>
-                      )}
-                      <div className="flex items-center" style={{ gap: '6px', marginLeft: 'auto' }}>
-                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-semibold" style={{ background: 'var(--primary)', color: '#fff' }}>
+                        {entry.time_spent && (
+                          <span className="flex items-center text-[11px]" style={{ color: 'var(--text-muted)', gap: '4px' }}>
+                            <Clock size={11} /> {entry.time_spent}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center" style={{ gap: '8px' }}>
+                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold" style={{ background: 'var(--primary)', color: '#fff' }}>
                           {creatorName.split(' ').map((n: string) => n[0]).join('')}
                         </div>
-                        <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{creatorName}</span>
+                        <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{creatorName}</span>
                       </div>
                     </div>
-                    <div className="text-sm" style={{ lineHeight: '1.625', color: 'var(--text)', marginBottom: '8px' }}>
+                    
+                    {/* Content */}
+                    <div style={{ color: 'var(--text)' }}>
                       {entry.event.split('\n').map((line, i) => {
                         if (line.startsWith('[Status:') && line.endsWith(']')) {
-                          return <div key={i} className="font-medium" style={{ color: 'var(--primary)', fontSize: 13, marginBottom: '4px' }}>{line.slice(1, -1)}</div>;
+                          return <div key={i} className="font-semibold text-xs uppercase tracking-wide" style={{ color: 'var(--primary)', marginBottom: '12px', padding: '8px 12px', background: 'rgba(123,104,238,0.08)', borderRadius: '8px', display: 'inline-block' }}>{line.slice(1, -1)}</div>;
                         }
-                        return <p key={i}>{line}</p>;
+                        return <p key={i} style={{ lineHeight: '1.7', fontSize: '14px', marginBottom: '8px' }}>{line}</p>;
                       })}
                     </div>
+                    
+                    {/* Footer: File attachment */}
                     {entry.file_name && (
-                      <div className="flex items-center text-xs font-medium" style={{ color: 'var(--primary)', gap: '6px' }}>
-                        <Link2 size={12} /> {entry.file_name}
+                      <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
+                        <div className="flex items-center text-xs font-medium" style={{ color: 'var(--primary)', gap: '8px', padding: '8px 12px', background: 'rgba(123,104,238,0.05)', borderRadius: '8px', display: 'inline-flex' }}>
+                          <Link2 size={14} /> 
+                          <span>{entry.file_name}</span>
+                        </div>
                       </div>
                     )}
                   </div>
