@@ -315,9 +315,11 @@ export function LogBook() {
                 setShowForm(false);
                 setEditingLogId(null);
                 setForm({ date: new Date().toISOString().split('T')[0], event: '', category: 'design', status: '', timeSpent: '', fileName: '' });
-                // Reload entries
+                // Reload entries and force refresh to show new log
                 const logs = await fetchLogEntries(taskId);
                 setEntries(logs as LogEntryWithProfile[]);
+                // Force page reload to ensure new log appears (busts cache)
+                window.location.reload();
               }}
                 className="rounded-xl text-sm font-semibold text-white"
                 style={{ background: 'var(--primary)', padding: '12px 28px' }}>{editingLogId ? 'Update Entry' : 'Save Entry'}</button>
