@@ -123,31 +123,31 @@ export function TaskList() {
   }
 
   return (
-    <div className="pb-32 lg:pb-8">
+    <div style={{ paddingBottom: '128px' }} className="lg:pb-8">
       {/* Count */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between" style={{ marginBottom: '24px' }}>
         <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
           {filtered.length} task{filtered.length !== 1 ? 's' : ''}
         </p>
       </div>
 
       {/* Filters Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row" style={{ gap: '12px', marginBottom: '24px' }}>
         <div className="relative flex-1">
           <input
             type="text"
             placeholder="Search tasks..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pr-11 rounded-xl text-sm outline-none transition-all"
-            style={{ background: 'var(--surface)', border: '1px solid var(--border)', height: '40px', padding: '0 16px 0 20px' }}
+            className="w-full rounded-xl text-sm outline-none transition-all"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)', height: '40px', padding: '0 44px 0 20px' }}
             onFocus={(e) => e.target.style.borderColor = 'var(--primary)'}
             onBlur={(e) => e.target.style.borderColor = 'var(--border)'}
           />
           <Search size={18} className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
         </div>
 
-        <div className="flex gap-2 flex-1">
+        <div className="flex flex-1" style={{ gap: '8px' }}>
           {/* Status Dropdown */}
           <div className="relative flex-1" ref={statusRef}>
             <button

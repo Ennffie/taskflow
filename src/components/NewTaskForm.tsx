@@ -60,42 +60,42 @@ export function NewTaskForm({ onClose, onCreated }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ padding: '16px' }}>
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative w-full max-w-lg rounded-2xl max-h-[90vh] overflow-y-auto" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '32px 24px' }}>
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between" style={{ marginBottom: '24px' }}>
           <h3 className="text-lg font-bold" style={{ color: 'var(--text)' }}>New Task</h3>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
+          <button onClick={onClose} style={{ padding: '4px' }} className="hover:bg-gray-100 rounded-lg"><X size={20} /></button>
         </div>
 
-        <div className="space-y-4">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {/* Title */}
           <div>
-            <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Title *</label>
+            <label className="block text-xs font-semibold uppercase tracking-wider" style={{ marginBottom: '8px', color: 'var(--text-muted)' }}>Title *</label>
             <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Task title..."
-              className="w-full px-4 py-3 rounded-xl text-sm focus:outline-none" style={{ border: '1px solid var(--border)' }} />
+              className="w-full rounded-xl text-sm focus:outline-none" style={{ padding: '12px 16px', border: '1px solid var(--border)' }} />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Description</label>
+            <label className="block text-xs font-semibold uppercase tracking-wider" style={{ marginBottom: '8px', color: 'var(--text-muted)' }}>Description</label>
             <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Task description..." rows={3}
-              className="w-full px-4 py-3 rounded-xl text-sm focus:outline-none resize-none" style={{ border: '1px solid var(--border)' }} />
+              className="w-full rounded-xl text-sm focus:outline-none resize-none" style={{ padding: '12px 16px', border: '1px solid var(--border)' }} />
           </div>
 
           {/* Status + Priority */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2" style={{ gap: '16px' }}>
             <div>
-              <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Status</label>
+              <label className="block text-xs font-semibold uppercase tracking-wider" style={{ marginBottom: '8px', color: 'var(--text-muted)' }}>Status</label>
               <select value={status} onChange={e => setStatus(e.target.value as TaskStatus)}
-                className="w-full px-4 py-3 rounded-xl text-sm focus:outline-none bg-white" style={{ border: '1px solid var(--border)' }}>
+                className="w-full rounded-xl text-sm focus:outline-none bg-white" style={{ padding: '12px 16px', border: '1px solid var(--border)' }}>
                 {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Priority</label>
+              <label className="block text-xs font-semibold uppercase tracking-wider" style={{ marginBottom: '8px', color: 'var(--text-muted)' }}>Priority</label>
               <select value={priority} onChange={e => setPriority(e.target.value as TaskPriority)}
-                className="w-full px-4 py-3 rounded-xl text-sm focus:outline-none bg-white" style={{ border: '1px solid var(--border)' }}>
+                className="w-full rounded-xl text-sm focus:outline-none bg-white" style={{ padding: '12px 16px', border: '1px solid var(--border)' }}>
                 {Object.entries(PRIORITY_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
               </select>
             </div>
@@ -103,20 +103,22 @@ export function NewTaskForm({ onClose, onCreated }: Props) {
 
           {/* Due Date */}
           <div>
-            <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Due Date</label>
+            <label className="block text-xs font-semibold uppercase tracking-wider" style={{ marginBottom: '8px', color: 'var(--text-muted)' }}>Due Date</label>
             <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl text-sm focus:outline-none" style={{ border: '1px solid var(--border)' }} />
+              className="w-full rounded-xl text-sm focus:outline-none" style={{ padding: '12px 16px', border: '1px solid var(--border)' }} />
           </div>
 
           {/* Assignees */}
           {isAdmin ? (
           <div>
-            <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Assignees</label>
-            <div className="flex flex-wrap gap-2">
+            <label className="block text-xs font-semibold uppercase tracking-wider" style={{ marginBottom: '8px', color: 'var(--text-muted)' }}>Assignees</label>
+            <div className="flex flex-wrap" style={{ gap: '8px' }}>
               {profiles.filter(p => p.name && p.email).map(p => (
                 <button key={p.id} onClick={() => toggleAssignee(p.id)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all"
+                  className="flex items-center rounded-lg text-sm font-medium transition-all"
                   style={{
+                    gap: '8px',
+                    padding: '8px 12px',
                     background: assigneeIds.includes(p.id) ? 'var(--primary)' : 'var(--bg)',
                     color: assigneeIds.includes(p.id) ? '#fff' : 'var(--text-secondary)',
                     border: assigneeIds.includes(p.id) ? '1px solid var(--primary)' : '1px solid var(--border)',
@@ -132,14 +134,14 @@ export function NewTaskForm({ onClose, onCreated }: Props) {
           </div>
           ) : (
           <div>
-            <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Assignee</label>
-            <div className="flex items-center gap-2">
+            <label className="block text-xs font-semibold uppercase tracking-wider" style={{ marginBottom: '8px', color: 'var(--text-muted)' }}>Assignee</label>
+            <div className="flex items-center" style={{ gap: '8px' }}>
               {assigneeIds.map(id => {
                 const p = profiles.find(x => x.id === id);
                 if (!p) return null;
                 const initials = p.name.split(' ').map((n: string) => n[0]).join('');
                 return (
-                  <div key={id} className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium" style={{ background: 'var(--primary)', color: '#fff' }}>
+                  <div key={id} className="flex items-center rounded-lg text-sm font-medium" style={{ gap: '8px', padding: '8px 12px', background: 'var(--primary)', color: '#fff' }}>
                     <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-semibold" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}>
                       {initials}
                     </div>
@@ -151,13 +153,13 @@ export function NewTaskForm({ onClose, onCreated }: Props) {
           </div>
           )}
           <div>
-            <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Tags (comma separated)</label>
+            <label className="block text-xs font-semibold uppercase tracking-wider" style={{ marginBottom: '8px', color: 'var(--text-muted)' }}>Tags (comma separated)</label>
             <input value={tagInput} onChange={e => setTagInput(e.target.value)} placeholder="Design, Mobile, Dashboard..."
-              className="w-full px-4 py-3 rounded-xl text-sm focus:outline-none" style={{ border: '1px solid var(--border)' }} />
+              className="w-full rounded-xl text-sm focus:outline-none" style={{ padding: '12px 16px', border: '1px solid var(--border)' }} />
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex justify-end" style={{ gap: '12px', paddingTop: '8px' }}>
             <button onClick={onClose} className="rounded-xl text-sm font-medium" style={{ color: 'var(--text-secondary)', padding: '12px 24px' }}>Cancel</button>
             <button onClick={handleSubmit} disabled={saving || !title.trim()}
               className="rounded-xl text-sm font-semibold text-white disabled:opacity-50"
