@@ -365,14 +365,20 @@ export function TaskList() {
                   </td>
                   <td style={{ padding: "20px 24px" }}>
                     <div className="flex items-center gap-2">
-                      {task.assignees.map((a) => (
-                        <div key={a.id} className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
-                          style={{ background: 'var(--primary)', color: '#fff' }}>
-                          {a.name.split(' ').map(n => n[0]).join('')}
-                        </div>
-                      ))}
-                      {task.assignees.length === 1 && (
-                        <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{task.assignees[0].name.split(' ')[0]}</span>
+                      {task.assignees.length > 0 ? (
+                        <>
+                          {task.assignees.map((a) => (
+                            <div key={a.id} className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
+                              style={{ background: 'var(--primary)', color: '#fff' }}>
+                              {a.name.split(' ').map(n => n[0]).join('')}
+                            </div>
+                          ))}
+                          {task.assignees.length === 1 && (
+                            <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{task.assignees[0].name.split(' ')[0]}</span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-sm" style={{ color: 'var(--text-muted)' }}>—</span>
                       )}
                     </div>
                   </td>

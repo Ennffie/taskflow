@@ -1,3 +1,11 @@
+export const CAT: Record<string, { label: string; color: string; bg: string }> = {
+  design:   { label: 'Design',   color: '#7c3aed', bg: 'rgba(124,58,237,0.1)' },
+  research: { label: 'Research', color: '#2563eb', bg: 'rgba(37,99,235,0.1)' },
+  meeting:  { label: 'Meeting',  color: '#16a34a', bg: 'rgba(22,163,74,0.1)' },
+  review:   { label: 'Review',   color: '#d97706', bg: 'rgba(217,119,6,0.1)' },
+  other:    { label: 'Other',    color: '#6b7280', bg: 'rgba(107,114,128,0.1)' },
+};
+
 export interface User {
   id: string;
   name: string;

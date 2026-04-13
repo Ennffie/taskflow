@@ -5,6 +5,7 @@ import { STATUS_CONFIG, PRIORITY_CONFIG } from '../types';
 import { fetchProfiles, createTask } from '../lib/api';
 import type { Profile } from '../lib/api';
 import { CURRENT_USER_ID } from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Props {
   onClose: () => void;
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function NewTaskForm({ onClose, onCreated }: Props) {
+  const { profile, isAdmin } = useAuth();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -22,7 +24,18 @@ export function NewTaskForm({ onClose, onCreated }: Props) {
   const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => { fetchProfiles().then(setProfiles); }, []);
+  useEffect(() => {
+    fetchProfiles().then(profs => {
+      setProfiles(profs);
+    });
+  }, []);
+
+  // Member: auto-assign self when profile loaded
+  useEffect(() => {
+    if (!isAdmin && profile?.id && assigneeIds.length === 0) {
+      setAssigneeIds([profile.id]);
+    }
+  }, [profile, isAdmin]);
 
   const toggleAssignee = (id: string) => {
     setAssigneeIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -96,10 +109,11 @@ export function NewTaskForm({ onClose, onCreated }: Props) {
           </div>
 
           {/* Assignees */}
+          {isAdmin ? (
           <div>
             <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Assignees</label>
             <div className="flex flex-wrap gap-2">
-              {profiles.map(p => (
+              {profiles.filter(p => p.name && p.email).map(p => (
                 <button key={p.id} onClick={() => toggleAssignee(p.id)}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all"
                   style={{
@@ -116,8 +130,26 @@ export function NewTaskForm({ onClose, onCreated }: Props) {
               ))}
             </div>
           </div>
-
-          {/* Tags */}
+          ) : (
+          <div>
+            <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Assignee</label>
+            <div className="flex items-center gap-2">
+              {assigneeIds.map(id => {
+                const p = profiles.find(x => x.id === id);
+                if (!p) return null;
+                const initials = p.name.split(' ').map((n: string) => n[0]).join('');
+                return (
+                  <div key={id} className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium" style={{ background: 'var(--primary)', color: '#fff' }}>
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-semibold" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}>
+                      {initials}
+                    </div>
+                    {p.name}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          )}
           <div>
             <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Tags (comma separated)</label>
             <input value={tagInput} onChange={e => setTagInput(e.target.value)} placeholder="Design, Mobile, Dashboard..."

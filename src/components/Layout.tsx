@@ -43,10 +43,13 @@ export function Layout({ children }: { children: ReactNode }) {
             Tasks
           </button>
           <button
-            onClick={() => alert('Coming Soon')}
+            onClick={() => navigate('/my-log')}
             className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all text-left"
-            style={{ color: 'var(--sidebar-text)', background: 'transparent' }}>
-            <FileText size={20} strokeWidth={1.8} />
+            style={{
+              color: location.pathname === '/my-log' ? 'var(--sidebar-active)' : 'var(--sidebar-text)',
+              background: location.pathname === '/my-log' ? 'var(--sidebar-hover)' : 'transparent',
+            }}>
+            <FileText size={20} strokeWidth={location.pathname === '/my-log' ? 2.2 : 1.8} />
             My Log
           </button>
           <button
@@ -215,8 +218,9 @@ export function Layout({ children }: { children: ReactNode }) {
           <CheckSquare size={22} />
           <span className="text-[10px] font-medium">Tasks</span>
         </button>
-        <button onClick={() => alert('Coming Soon')} className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-lg"
-          style={{ color: 'var(--text-muted)' }}>
+        <button onClick={() => navigate('/my-log')} 
+          className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-lg"
+          style={{ color: location.pathname === '/my-log' ? 'var(--primary)' : 'var(--text-muted)' }}>
           <FileText size={22} />
           <span className="text-[10px] font-medium">My Log</span>
         </button>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Shield, ChevronDown, ChevronUp, Check, UserCog } from 'lucide-react';
+import { ArrowLeft, Shield, ChevronDown, ChevronUp, Check, UserCog, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -39,6 +39,7 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -105,6 +106,44 @@ export default function Settings() {
       setMessage('Permission updated');
       setTimeout(() => setMessage(''), 2000);
     }
+    setSaving(false);
+  }
+
+  async function deleteUser(userId: string) {
+    setSaving(true);
+    
+    try {
+      // Step 1: Null out FK references in tasks
+      await supabase.from('tasks').update({ created_by: null }).eq('created_by', userId);
+      await supabase.from('tasks').update({ updated_by: null }).eq('updated_by', userId);
+      
+      // Step 2: Remove from task_assignees
+      await supabase.from('task_assignees').delete().eq('user_id', userId);
+      
+      // Step 3: Remove permissions
+      await supabase.from('user_permissions').delete().eq('user_id', userId);
+      
+      // Step 4: Transfer log entries to admin (or null if not allowed)
+      await supabase.from('log_entries').update({ created_by: profile?.id || null }).eq('created_by', userId);
+      
+      // Step 5: Delete profile
+      const { error } = await supabase.from('profiles').delete().eq('id', userId);
+      
+      if (error) {
+        alert('Delete failed: ' + error.message);
+        setSaving(false);
+        return;
+      }
+      
+      // Update UI
+      setUsers(users.filter(u => u.id !== userId));
+      setMessage('User deleted');
+      setTimeout(() => setMessage(''), 2000);
+      
+    } catch (e: any) {
+      alert('Delete error: ' + e.message);
+    }
+    
     setSaving(false);
   }
 
@@ -210,6 +249,16 @@ export default function Settings() {
                       >
                         {expandedUser === user.id ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                       </button>
+                      {/* Delete Button */}
+                      {user.id !== profile?.id && (
+                        <button
+                          onClick={() => { setDeleteTarget(user); }}
+                          className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                          style={{ color: '#ef4444' }}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -278,6 +327,34 @@ export default function Settings() {
           </div>
         </div>
       </div>
+
+      {/* Confirm Delete User Modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setDeleteTarget(null)}>
+          <div className="w-full max-w-sm rounded-2xl" style={{ background: 'var(--surface)', padding: '32px 28px' }} onClick={e => e.stopPropagation()}>
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mb-4" style={{ background: 'rgba(239,68,68,0.1)' }}>
+                <Trash2 size={22} style={{ color: '#ef4444' }} />
+              </div>
+              <h4 className="text-base font-bold mb-2" style={{ color: 'var(--text)' }}>Delete User</h4>
+              <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
+                Are you sure you want to remove <strong>{deleteTarget.name}</strong>? Their previous records will remain in the system.
+              </p>
+              <div className="flex w-full gap-3">
+                <button onClick={() => setDeleteTarget(null)} 
+                  className="flex-1 rounded-xl text-sm font-medium" 
+                  style={{ padding: '12px 0', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>Cancel</button>
+                <button onClick={async () => {
+                  await deleteUser(deleteTarget.id);
+                  setDeleteTarget(null);
+                }} 
+                  className="flex-1 rounded-xl text-sm font-medium text-white"
+                  style={{ padding: '12px 0', background: '#ef4444' }}>Confirm</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

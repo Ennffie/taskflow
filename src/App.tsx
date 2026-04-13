@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Layout } from './components/Layout';
 import { TaskList } from './pages/TaskList';
 import { LogBook } from './pages/LogBook';
+import { MyLog } from './pages/MyLog';
 import Settings from './pages/Settings';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -37,17 +38,31 @@ function LoginForm({ defaultRole }: { defaultRole?: string }) {
     setLoading(true);
     try {
       if (isSignUp || signUpMode) {
-        const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { name } } });
+        // 1. Create auth account
+        const { data, error } = await supabase.auth.signUp({ 
+          email, 
+          password, 
+          options: { data: { name } } 
+        });
         if (error) throw error;
-        // Set role in profile after signup
+
+        // 2. Create profile immediately
         if (data.user) {
           const role = defaultRole || 'member';
-          // Wait a moment for trigger to create profile, then update role
-          setTimeout(async () => {
-            await supabase.from('profiles').update({ role }).eq('id', data.user!.id);
-          }, 2000);
+          const userName = name || email.split('@')[0];
+          
+          // Upsert profile (create or update)
+          const { error: profileErr } = await supabase.from('profiles').upsert({
+            id: data.user.id,
+            name: userName,
+            email: data.user.email,
+            role: role,
+          }, { onConflict: 'id' });
+          
+          if (profileErr) console.error('Profile create error:', profileErr);
         }
       } else {
+        // Simple login - just auth
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
@@ -127,6 +142,7 @@ function App() {
           <Route path="/invite/:code" element={<InvitePage />} />
           <Route path="/" element={<ProtectedRoute><Layout><TaskList /></Layout></ProtectedRoute>} />
           <Route path="/task/:taskId" element={<ProtectedRoute><Layout><LogBook /></Layout></ProtectedRoute>} />
+          <Route path="/my-log" element={<ProtectedRoute><Layout><MyLog /></Layout></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
         </Routes>
       </HashRouter>

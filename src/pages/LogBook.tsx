@@ -1,19 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Clock, Calendar, FileText, Palette, Search, Users, Eye, FileEdit, Edit2, X, Link2, Trash2 } from 'lucide-react';
-import { STATUS_CONFIG, PRIORITY_CONFIG } from '../types';
-import { fetchTasks, fetchLogEntries, insertLogEntry, updateLogEntry, updateTask, fetchProfiles, updateTaskAssignees, deleteLogEntry } from '../lib/api';
+import { ArrowLeft, Plus, Clock, Calendar, FileText, Edit2, Link2, Trash2 } from 'lucide-react';
+import { STATUS_CONFIG, PRIORITY_CONFIG, CAT } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import { fetchTasks, fetchLogEntries, insertLogEntry, updateLogEntry, updateTask, fetchProfiles, updateTaskAssignees, deleteLogEntry, deleteTask } from '../lib/api';
 import type { TaskWithData, Profile } from '../lib/api';
 import type { LogEntryRow } from '../lib/api';
 import { CURRENT_USER_ID } from '../lib/api';
-
-const CAT: Record<string, { label: string; color: string; bg: string; icon: any }> = {
-  design:   { label: 'Design',   color: '#7c3aed', bg: 'rgba(124,58,237,0.1)',  icon: Palette },
-  research: { label: 'Research', color: '#2563eb', bg: 'rgba(37,99,235,0.1)',   icon: Search },
-  meeting:  { label: 'Meeting',  color: '#16a34a', bg: 'rgba(22,163,74,0.1)',   icon: Users },
-  review:   { label: 'Review',   color: '#d97706', bg: 'rgba(217,119,6,0.1)',   icon: Eye },
-  other:    { label: 'Other',    color: '#6b7280', bg: 'rgba(107,114,128,0.1)', icon: FileEdit },
-};
 
 interface LogEntryWithProfile extends LogEntryRow {
   created_by_profile?: { id: string; name: string; email: string; role: string };
@@ -22,15 +15,17 @@ interface LogEntryWithProfile extends LogEntryRow {
 export function LogBook() {
   const { taskId } = useParams();
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [task, setTask] = useState<TaskWithData | null>(null);
   const [entries, setEntries] = useState<LogEntryWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showEditTask, setShowEditTask] = useState(false);
   const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [form, setForm] = useState({ date: new Date().toISOString().split('T')[0], event: '', category: 'design', timeSpent: '', fileName: '' });
+  const [form, setForm] = useState({ date: new Date().toISOString().split('T')[0], event: '', category: 'design', status: '' as string, timeSpent: '', fileName: '' });
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [confirmDeleteTarget, setConfirmDeleteTarget] = useState<'log' | 'task'>('log');
   const [editForm, setEditForm] = useState({ title: '', description: '', status: 'todo' as any, priority: 'medium' as any, assigneeIds: [] as string[] });
 
   useEffect(() => {
@@ -70,9 +65,14 @@ export function LogBook() {
       {/* Edit Task Inline Form */}
       {showEditTask && task && (
         <div className="rounded-2xl max-h-[80vh] overflow-y-auto mb-4" style={{ background: 'var(--surface)', border: '2px solid var(--primary)', padding: '32px 24px' }}>
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-5">
             <h3 className="text-base font-bold" style={{ color: 'var(--text)' }}>Edit Task</h3>
-            <button onClick={() => setShowEditTask(false)} style={{ padding: 8 }}><X size={18} style={{ color: 'var(--text-muted)' }} /></button>
+            <button 
+              onClick={() => { setConfirmDeleteTarget('task'); setShowConfirmDelete(true); }}
+              className="text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
+              style={{ color: '#ef4444', background: 'rgba(239,68,68,0.1)' }}>
+              Delete
+            </button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div>
@@ -104,7 +104,7 @@ export function LogBook() {
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, display: 'block', color: 'var(--text-muted)' }}>Assignees</label>
               <div className="flex flex-wrap gap-2">
-                {profiles.map(p => (
+                {profiles.filter(p => p.name && p.email).map(p => (
                   <button key={p.id} onClick={() => {
                     const ids = editForm.assigneeIds.includes(p.id) 
                       ? editForm.assigneeIds.filter(id => id !== p.id)
@@ -119,7 +119,7 @@ export function LogBook() {
               </div>
             </div>
           </div>
-          <div className="flex justify-end gap-3 mt-8">
+          <div className="flex justify-end gap-3" style={{ marginTop: 48 }}>
             <button onClick={() => setShowEditTask(false)} style={{ padding: '12px 24px', borderRadius: 12, color: 'var(--text-secondary)', fontSize: 14, fontWeight: 500, background: 'transparent', border: 'none', cursor: 'pointer' }}>Cancel</button>
             <button onClick={async () => {
               await updateTask(task.id, { title: editForm.title, description: editForm.description, status: editForm.status, priority: editForm.priority, updated_by: CURRENT_USER_ID });
@@ -140,6 +140,7 @@ export function LogBook() {
           <div className="flex-1">
             <div className="flex items-start justify-between gap-3 mb-2">
               <h2 className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text)' }}>{task.title}</h2>
+              {isAdmin && (
               <button 
                 onClick={() => {
                   setEditForm({ 
@@ -155,6 +156,7 @@ export function LogBook() {
                 style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
                 <Edit2 size={12} /> Edit
               </button>
+              )}
             </div>
             {task.description && <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{task.description}</p>}
           </div>
@@ -206,7 +208,7 @@ export function LogBook() {
             <h3 className="text-base font-bold" style={{ color: 'var(--text)' }}>{editingLogId ? 'Edit Log Entry' : 'New Log Entry'}</h3>
             {editingLogId && (
               <button 
-                onClick={() => setShowConfirmDelete(true)}
+                onClick={() => { setConfirmDeleteTarget('log'); setShowConfirmDelete(true); }}
                 className="text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
                 style={{ color: '#ef4444', background: 'rgba(239,68,68,0.1)' }}>
                 Delete
@@ -221,6 +223,7 @@ export function LogBook() {
                   className="w-full px-4 py-3 rounded-xl text-sm focus:outline-none"
                   style={{ border: '1px solid var(--border)' }} />
               </div>
+              <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Category</label>
                 <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
@@ -228,6 +231,16 @@ export function LogBook() {
                   style={{ border: '1px solid var(--border)' }}>
                   {Object.entries(CAT).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}
                 </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Status</label>
+                <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl text-sm focus:outline-none bg-white"
+                  style={{ border: '1px solid var(--border)' }}>
+                  <option value="">No change</option>
+                  {Object.entries(STATUS_CONFIG).map(([k, s]) => <option key={k} value={k}>{s.label}</option>)}
+                </select>
+              </div>
               </div>
             </div>
             <div>
@@ -270,30 +283,38 @@ export function LogBook() {
               <button onClick={() => { setShowForm(false); setEditingLogId(null); }} className="rounded-xl text-sm font-medium" style={{ color: 'var(--text-secondary)', padding: '12px 24px' }}>Cancel</button>
               <button onClick={async () => {
                 if (!form.event.trim() || !taskId) return;
+                let eventText = form.event.trim();
+                if (form.status && task) {
+                  const sLabel = STATUS_CONFIG[form.status as keyof typeof STATUS_CONFIG]?.label || form.status;
+                  const oLabel = STATUS_CONFIG[task.status as keyof typeof STATUS_CONFIG]?.label || task.status;
+                  eventText = `[Status: ${oLabel} → ${sLabel}]\n${eventText}`;
+                }
                 if (editingLogId) {
-                  // Update existing log
                   await updateLogEntry(editingLogId, {
                     date: form.date,
-                    event: form.event.trim(),
+                    event: eventText,
                     category: form.category,
                     time_spent: form.timeSpent || undefined,
                     file_name: form.fileName || undefined,
                   });
                 } else {
-                  // Insert new log
                   await insertLogEntry({
                     task_id: taskId,
                     date: form.date,
-                    event: form.event.trim(),
+                    event: eventText,
                     category: form.category,
                     time_spent: form.timeSpent || undefined,
                     file_name: form.fileName || undefined,
                     created_by: CURRENT_USER_ID,
                   });
                 }
+                // Update task status if changed
+                if (form.status && task) {
+                  await updateTask(task.id, { status: form.status as any, updated_by: CURRENT_USER_ID });
+                }
                 setShowForm(false);
                 setEditingLogId(null);
-                setForm({ date: new Date().toISOString().split('T')[0], event: '', category: 'design', timeSpent: '', fileName: '' });
+                setForm({ date: new Date().toISOString().split('T')[0], event: '', category: 'design', status: '', timeSpent: '', fileName: '' });
                 // Reload entries
                 const logs = await fetchLogEntries(taskId);
                 setEntries(logs as LogEntryWithProfile[]);
@@ -346,6 +367,7 @@ export function LogBook() {
                         date: entry.date, 
                         event: entry.event, 
                         category: entry.category || 'design', 
+                        status: '',
                         timeSpent: entry.time_spent || '', 
                         fileName: entry.file_name || ''
                       });
@@ -354,11 +376,10 @@ export function LogBook() {
                     }}
                     className="relative rounded-2xl p-5 cursor-pointer hover:shadow-md transition-shadow z-10" 
                     style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                    <div className="absolute -left-[34px] top-6 w-3.5 h-3.5 rounded-full border-[3px] border-white z-0" style={{ background: 'var(--primary)' }} />
                     <div className="flex items-center gap-2 mb-3">
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold"
                         style={{ background: cat.bg, color: cat.color }}>
-                        <cat.icon size={12} /> {cat.label}
+                        {cat.label}
                       </span>
                       {entry.time_spent && (
                         <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-muted)' }}>
@@ -367,12 +388,19 @@ export function LogBook() {
                       )}
                       <div className="flex items-center gap-1.5 ml-auto">
                         <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-semibold" style={{ background: 'var(--primary)', color: '#fff' }}>
-                          {creatorName.charAt(0)}
+                          {creatorName.split(' ').map((n: string) => n[0]).join('')}
                         </div>
                         <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{creatorName}</span>
                       </div>
                     </div>
-                    <p className="text-sm leading-relaxed mb-2" style={{ color: 'var(--text)' }}>{entry.event}</p>
+                    <div className="text-sm leading-relaxed mb-2" style={{ color: 'var(--text)' }}>
+                      {entry.event.split('\n').map((line, i) => {
+                        if (line.startsWith('[Status:') && line.endsWith(']')) {
+                          return <div key={i} className="font-medium mb-1" style={{ color: 'var(--primary)', fontSize: 13 }}>{line.slice(1, -1)}</div>;
+                        }
+                        return <p key={i}>{line}</p>;
+                      })}
+                    </div>
                     {entry.file_name && (
                       <div className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--primary)' }}>
                         <Link2 size={12} /> {entry.file_name}
@@ -394,18 +422,22 @@ export function LogBook() {
               <div className="w-12 h-12 rounded-full flex items-center justify-center mb-4" style={{ background: 'rgba(239,68,68,0.1)' }}>
                 <Trash2 size={22} style={{ color: '#ef4444' }} />
               </div>
-              <h4 className="text-base font-bold mb-2" style={{ color: 'var(--text)' }}>Delete Log Entry</h4>
-              <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>Are you sure you want to delete this entry? This action cannot be undone.</p>
+              <h4 className="text-base font-bold mb-2" style={{ color: 'var(--text)' }}>{confirmDeleteTarget === 'task' ? 'Delete Task' : 'Delete Log Entry'}</h4>
+              <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>{confirmDeleteTarget === 'task' ? 'Are you sure you want to delete this task? All logs will be lost. This action cannot be undone.' : 'Are you sure you want to delete this entry? This action cannot be undone.'}</p>
               <div className="flex w-full gap-3">
                 <button onClick={() => setShowConfirmDelete(false)} 
                   className="flex-1 rounded-xl text-sm font-medium" 
                   style={{ padding: '12px 0', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>Cancel</button>
                 <button onClick={async () => {
-                  if (editingLogId) {
+                  if (confirmDeleteTarget === 'task' && task) {
+                    await deleteTask(task.id);
+                    setShowConfirmDelete(false);
+                    navigate('/');
+                  } else if (editingLogId) {
                     await deleteLogEntry(editingLogId);
                     setEditingLogId(null);
                     setShowForm(false);
-                    setForm({ date: new Date().toISOString().split('T')[0], event: '', category: 'design', timeSpent: '', fileName: '' });
+                    setForm({ date: new Date().toISOString().split('T')[0], event: '', category: 'design', status: '', timeSpent: '', fileName: '' });
                     const logs = await fetchLogEntries(taskId || '');
                     setEntries(logs as LogEntryWithProfile[]);
                   }
