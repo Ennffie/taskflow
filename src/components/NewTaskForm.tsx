@@ -45,7 +45,7 @@ export function NewTaskForm({ onClose, onCreated }: Props) {
     if (!title.trim()) return;
     setSaving(true);
     const tags = tagInput.split(',').map(t => t.trim()).filter(Boolean);
-    await createTask({
+    const result = await createTask({
       title: title.trim(),
       description,
       status,
@@ -56,7 +56,12 @@ export function NewTaskForm({ onClose, onCreated }: Props) {
       created_by: CURRENT_USER_ID,
     });
     setSaving(false);
-    onCreated();
+    if (result) {
+      onCreated();
+    } else {
+      // Task creation failed, stay on form
+      console.error('Task creation failed');
+    }
   };
 
   return (
