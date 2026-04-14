@@ -12,7 +12,7 @@ interface Props {
 }
 
 export function NewTaskForm({ onClose, onCreated }: Props) {
-  const { profile, isAdmin } = useAuth();
+  const { profile, user, isAdmin } = useAuth();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -41,7 +41,11 @@ export function NewTaskForm({ onClose, onCreated }: Props) {
   };
 
   const handleSubmit = async () => {
-    if (!title.trim() || !profile?.id) return;
+    const actorId = profile?.id || user?.id;
+    if (!title.trim() || !actorId) {
+      alert('Cannot create task: user profile not loaded yet. Please refresh and sign in again.');
+      return;
+    }
     setSaving(true);
     const tags = tagInput.split(',').map(t => t.trim()).filter(Boolean);
     const result = await createTask({
@@ -52,7 +56,7 @@ export function NewTaskForm({ onClose, onCreated }: Props) {
       due_date: dueDate || undefined,
       assignee_ids: assigneeIds,
       tags,
-      created_by: profile.id,
+      created_by: actorId,
     });
     setSaving(false);
     if (result) {

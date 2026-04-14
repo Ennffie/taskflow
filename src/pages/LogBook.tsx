@@ -14,7 +14,7 @@ interface LogEntryWithProfile extends LogEntryRow {
 export function LogBook() {
   const { taskId } = useParams();
   const navigate = useNavigate();
-  const { isAdmin, profile } = useAuth();
+  const { isAdmin, profile, user } = useAuth();
   const [task, setTask] = useState<TaskWithData | null>(null);
   const [entries, setEntries] = useState<LogEntryWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -121,8 +121,12 @@ export function LogBook() {
           <div className="flex justify-end" style={{ gap: '12px', marginTop: '48px' }}>
             <button onClick={() => setShowEditTask(false)} style={{ padding: '12px 24px', borderRadius: 12, color: 'var(--text-secondary)', fontSize: 14, fontWeight: 500, background: 'transparent', border: 'none', cursor: 'pointer' }}>Cancel</button>
             <button onClick={async () => {
-              if (!profile?.id) return;
-              await updateTask(task.id, { title: editForm.title, description: editForm.description, status: editForm.status, priority: editForm.priority, updated_by: profile.id });
+              const actorId = profile?.id || user?.id;
+              if (!actorId) {
+                alert('Cannot update task: user profile not loaded yet. Please refresh and sign in again.');
+                return;
+              }
+              await updateTask(task.id, { title: editForm.title, description: editForm.description, status: editForm.status, priority: editForm.priority, updated_by: actorId });
               await updateTaskAssignees(task.id, editForm.assigneeIds);
               setShowEditTask(false);
               const tasks = await fetchTasks();
@@ -282,7 +286,11 @@ export function LogBook() {
             <div className="flex justify-end" style={{ gap: '12px', paddingTop: '8px' }}>
               <button onClick={() => { setShowForm(false); setEditingLogId(null); }} className="rounded-xl text-sm font-medium" style={{ color: 'var(--text-secondary)', padding: '12px 24px' }}>Cancel</button>
               <button onClick={async () => {
-                if (!form.event.trim() || !taskId || !profile?.id) return;
+                const actorId = profile?.id || user?.id;
+                if (!form.event.trim() || !taskId || !actorId) {
+                  alert('Cannot save log: user profile not loaded yet. Please refresh and sign in again.');
+                  return;
+                }
                 let eventText = form.event.trim();
                 if (form.status && task) {
                   const sLabel = STATUS_CONFIG[form.status as keyof typeof STATUS_CONFIG]?.label || form.status;
@@ -305,12 +313,12 @@ export function LogBook() {
                     category: form.category,
                     time_spent: form.timeSpent || undefined,
                     file_name: form.fileName || undefined,
-                    created_by: profile.id,
+                    created_by: actorId,
                   });
                 }
                 // Update task status if changed
                 if (form.status && task) {
-                  await updateTask(task.id, { status: form.status as any, updated_by: profile.id });
+                  await updateTask(task.id, { status: form.status as any, updated_by: actorId });
                 }
                 setShowForm(false);
                 setEditingLogId(null);
