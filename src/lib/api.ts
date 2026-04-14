@@ -156,16 +156,22 @@ export async function createTask(params: {
   }
 
   // Insert tags
-  if (tags.length > 0) {
+  const cleanTags = tags.filter(t => t.trim()).map(name => name.trim());
+  if (cleanTags.length > 0) {
     const { error: tagErr } = await supabase.from('tags').insert(
-      tags.filter(t => t.trim()).map(name => ({ task_id: taskId, name: name.trim() }))
+      cleanTags.map(name => ({ task_id: taskId, name }))
     );
     if (tagErr) console.error('createTask tags:', tagErr);
   }
 
-  // Fetch complete task
-  const allTasks = await fetchTasks();
-  return allTasks.find(t => t.id === taskId) || null;
+  // Return immediately from inserted row, avoid stale refetch timing issues
+  return {
+    ...(taskData as TaskRow),
+    assignees: [],
+    tags_list: cleanTags,
+    updated_by_profile: undefined,
+    log_count: 0,
+  } as TaskWithData;
 }
 
 export async function insertLogEntry(params: {
