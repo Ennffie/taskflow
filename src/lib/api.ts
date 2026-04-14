@@ -139,11 +139,15 @@ export async function createTask(params: {
     updated_by: created_by,
   }).select().single();
 
+  console.log('DEBUG createTask insert result:', { taskData, taskErr, created_by });
+
   if (taskErr || !taskData) { 
     console.error('createTask:', taskErr); 
     alert(`Create task failed: ${taskErr?.message || 'Unknown error'}`);
     return null; 
   }
+
+  alert(`DEBUG API: task inserted OK | id=${taskData.id}`);
 
   const taskId = taskData.id;
 

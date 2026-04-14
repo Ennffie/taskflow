@@ -42,25 +42,37 @@ export function NewTaskForm({ onClose, onCreated }: Props) {
   };
 
   const handleSubmit = async () => {
-    if (!title.trim()) return;
-    setSaving(true);
-    const tags = tagInput.split(',').map(t => t.trim()).filter(Boolean);
-    const result = await createTask({
-      title: title.trim(),
-      description,
-      status,
-      priority,
-      due_date: dueDate || undefined,
-      assignee_ids: assigneeIds,
-      tags,
-      created_by: CURRENT_USER_ID,
-    });
-    setSaving(false);
-    if (result) {
-      onCreated();
-    } else {
-      // Task creation failed, stay on form
-      console.error('Task creation failed');
+    if (!title.trim()) {
+      alert('DEBUG: title empty, submit blocked');
+      return;
+    }
+
+    try {
+      alert(`DEBUG 1: submit triggered | title=${title.trim()} | assignees=${assigneeIds.length}`);
+      setSaving(true);
+      const tags = tagInput.split(',').map(t => t.trim()).filter(Boolean);
+      const result = await createTask({
+        title: title.trim(),
+        description,
+        status,
+        priority,
+        due_date: dueDate || undefined,
+        assignee_ids: assigneeIds,
+        tags,
+        created_by: CURRENT_USER_ID,
+      });
+      alert(`DEBUG 2: createTask returned ${result ? 'SUCCESS' : 'NULL'}`);
+      setSaving(false);
+      if (result) {
+        alert(`DEBUG 3: onCreated start | taskId=${result.id}`);
+        onCreated();
+      } else {
+        console.error('Task creation failed');
+      }
+    } catch (error: any) {
+      setSaving(false);
+      alert(`DEBUG ERROR: ${error?.message || error || 'unknown'}`);
+      console.error('handleSubmit error:', error);
     }
   };
 
