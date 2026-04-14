@@ -40,12 +40,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   async function fetchProfile(userId: string) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('id, name, email, role')
       .eq('id', userId)
       .single();
-    setProfile(data);
+
+    if (data) {
+      setProfile(data);
+      setLoading(false);
+      return;
+    }
+
+    // Auto-create missing profile for existing auth users
+    const { data: sessionData } = await supabase.auth.getSession();
+    const authUser = sessionData.session?.user;
+    if (authUser && authUser.id === userId) {
+      const fallbackProfile = {
+        id: authUser.id,
+        name: (authUser.user_metadata?.name as string) || authUser.email?.split('@')[0] || 'User',
+        email: authUser.email || '',
+        role: 'member' as Role,
+      };
+
+      const { data: upserted, error: upsertError } = await supabase
+        .from('profiles')
+        .upsert(fallbackProfile, { onConflict: 'id' })
+        .select('id, name, email, role')
+        .single();
+
+      if (!upsertError && upserted) {
+        setProfile(upserted);
+      } else {
+        console.error('fetchProfile upsert failed:', upsertError || error);
+        setProfile(null);
+      }
+    } else {
+      console.error('fetchProfile failed:', error);
+      setProfile(null);
+    }
+
     setLoading(false);
   }
 
