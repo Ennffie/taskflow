@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { fetchTasks, fetchLogEntries, insertLogEntry, updateLogEntry, updateTask, fetchProfiles, updateTaskAssignees, deleteLogEntry, deleteTask } from '../lib/api';
 import type { TaskWithData, Profile } from '../lib/api';
 import type { LogEntryRow } from '../lib/api';
+import { CURRENT_USER_ID } from '../lib/api';
 
 interface LogEntryWithProfile extends LogEntryRow {
   created_by_profile?: { id: string; name: string; email: string; role: string };
@@ -14,7 +15,7 @@ interface LogEntryWithProfile extends LogEntryRow {
 export function LogBook() {
   const { taskId } = useParams();
   const navigate = useNavigate();
-  const { isAdmin, profile, user } = useAuth();
+  const { isAdmin } = useAuth();
   const [task, setTask] = useState<TaskWithData | null>(null);
   const [entries, setEntries] = useState<LogEntryWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -121,12 +122,7 @@ export function LogBook() {
           <div className="flex justify-end" style={{ gap: '12px', marginTop: '48px' }}>
             <button onClick={() => setShowEditTask(false)} style={{ padding: '12px 24px', borderRadius: 12, color: 'var(--text-secondary)', fontSize: 14, fontWeight: 500, background: 'transparent', border: 'none', cursor: 'pointer' }}>Cancel</button>
             <button onClick={async () => {
-              const actorId = profile?.id || user?.id;
-              if (!actorId) {
-                alert('Cannot update task: user profile not loaded yet. Please refresh and sign in again.');
-                return;
-              }
-              await updateTask(task.id, { title: editForm.title, description: editForm.description, status: editForm.status, priority: editForm.priority, updated_by: actorId });
+              await updateTask(task.id, { title: editForm.title, description: editForm.description, status: editForm.status, priority: editForm.priority, updated_by: CURRENT_USER_ID });
               await updateTaskAssignees(task.id, editForm.assigneeIds);
               setShowEditTask(false);
               const tasks = await fetchTasks();
@@ -286,11 +282,7 @@ export function LogBook() {
             <div className="flex justify-end" style={{ gap: '12px', paddingTop: '8px' }}>
               <button onClick={() => { setShowForm(false); setEditingLogId(null); }} className="rounded-xl text-sm font-medium" style={{ color: 'var(--text-secondary)', padding: '12px 24px' }}>Cancel</button>
               <button onClick={async () => {
-                const actorId = profile?.id || user?.id;
-                if (!form.event.trim() || !taskId || !actorId) {
-                  alert('Cannot save log: user profile not loaded yet. Please refresh and sign in again.');
-                  return;
-                }
+                if (!form.event.trim() || !taskId) return;
                 let eventText = form.event.trim();
                 if (form.status && task) {
                   const sLabel = STATUS_CONFIG[form.status as keyof typeof STATUS_CONFIG]?.label || form.status;
@@ -313,12 +305,12 @@ export function LogBook() {
                     category: form.category,
                     time_spent: form.timeSpent || undefined,
                     file_name: form.fileName || undefined,
-                    created_by: actorId,
+                    created_by: CURRENT_USER_ID,
                   });
                 }
                 // Update task status if changed
                 if (form.status && task) {
-                  await updateTask(task.id, { status: form.status as any, updated_by: actorId });
+                  await updateTask(task.id, { status: form.status as any, updated_by: CURRENT_USER_ID });
                 }
                 setShowForm(false);
                 setEditingLogId(null);

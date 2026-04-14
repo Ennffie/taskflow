@@ -253,3 +253,7 @@ export async function deleteLogEntry(entryId: string): Promise<boolean> {
 }
 
 // ============ AUTH ============
+
+// Current user fallback for PMC tracker data writes.
+// Existing database rows and seeded relationships depend on this id.
+export const CURRENT_USER_ID = 'a0000001-0000-0000-0000-000000000001';

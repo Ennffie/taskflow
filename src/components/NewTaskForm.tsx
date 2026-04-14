@@ -4,6 +4,7 @@ import type { TaskStatus, TaskPriority } from '../types';
 import { STATUS_CONFIG, PRIORITY_CONFIG } from '../types';
 import { fetchProfiles, createTask } from '../lib/api';
 import type { Profile } from '../lib/api';
+import { CURRENT_USER_ID } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 
 interface Props {
@@ -12,7 +13,7 @@ interface Props {
 }
 
 export function NewTaskForm({ onClose, onCreated }: Props) {
-  const { profile, user, isAdmin } = useAuth();
+  const { profile, isAdmin } = useAuth();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -41,11 +42,7 @@ export function NewTaskForm({ onClose, onCreated }: Props) {
   };
 
   const handleSubmit = async () => {
-    const actorId = profile?.id || user?.id;
-    if (!title.trim() || !actorId) {
-      alert('Cannot create task: user profile not loaded yet. Please refresh and sign in again.');
-      return;
-    }
+    if (!title.trim()) return;
     setSaving(true);
     const tags = tagInput.split(',').map(t => t.trim()).filter(Boolean);
     const result = await createTask({
@@ -56,7 +53,7 @@ export function NewTaskForm({ onClose, onCreated }: Props) {
       due_date: dueDate || undefined,
       assignee_ids: assigneeIds,
       tags,
-      created_by: actorId,
+      created_by: CURRENT_USER_ID,
     });
     setSaving(false);
     if (result) {
