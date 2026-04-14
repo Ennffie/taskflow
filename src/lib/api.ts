@@ -139,7 +139,11 @@ export async function createTask(params: {
     updated_by: created_by,
   }).select().single();
 
-  if (taskErr || !taskData) { console.error('createTask:', taskErr); return null; }
+  if (taskErr || !taskData) { 
+    console.error('createTask:', taskErr); 
+    alert(`Create task failed: ${taskErr?.message || 'Unknown error'}`);
+    return null; 
+  }
 
   const taskId = taskData.id;
 
@@ -174,7 +178,11 @@ export async function insertLogEntry(params: {
   created_by: string;
 }) {
   const { data, error } = await supabase.from('log_entries').insert(params).select();
-  if (error) { console.error('insertLogEntry:', error); return null; }
+  if (error) { 
+    console.error('insertLogEntry:', error); 
+    alert(`Add log failed: ${error?.message || 'Unknown error'}`);
+    return null; 
+  }
   return data;
 }
 
