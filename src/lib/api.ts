@@ -253,6 +253,3 @@ export async function deleteLogEntry(entryId: string): Promise<boolean> {
 }
 
 // ============ AUTH ============
-
-// Current user - hardcoded for now (will be replaced by Supabase Auth)
-export const CURRENT_USER_ID = 'a0000001-0000-0000-0000-000000000001'; // Enfield Law

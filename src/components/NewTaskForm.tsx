@@ -4,7 +4,6 @@ import type { TaskStatus, TaskPriority } from '../types';
 import { STATUS_CONFIG, PRIORITY_CONFIG } from '../types';
 import { fetchProfiles, createTask } from '../lib/api';
 import type { Profile } from '../lib/api';
-import { CURRENT_USER_ID } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 
 interface Props {
@@ -42,7 +41,7 @@ export function NewTaskForm({ onClose, onCreated }: Props) {
   };
 
   const handleSubmit = async () => {
-    if (!title.trim()) return;
+    if (!title.trim() || !profile?.id) return;
     setSaving(true);
     const tags = tagInput.split(',').map(t => t.trim()).filter(Boolean);
     const result = await createTask({
@@ -53,7 +52,7 @@ export function NewTaskForm({ onClose, onCreated }: Props) {
       due_date: dueDate || undefined,
       assignee_ids: assigneeIds,
       tags,
-      created_by: CURRENT_USER_ID,
+      created_by: profile.id,
     });
     setSaving(false);
     if (result) {
