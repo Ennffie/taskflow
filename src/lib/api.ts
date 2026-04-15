@@ -116,6 +116,12 @@ export async function fetchAllLogEntries(): Promise<{ id: string; task_id: strin
 
 // ============ CREATE ============
 
+async function getCurrentActorId(preferredId?: string): Promise<string | null> {
+  if (preferredId) return preferredId;
+  const { data } = await supabase.auth.getUser();
+  return data.user?.id ?? null;
+}
+
 export async function createTask(params: {
   title: string;
   description?: string;
@@ -124,9 +130,14 @@ export async function createTask(params: {
   due_date?: string;
   assignee_ids: string[];
   tags: string[];
-  created_by: string;
+  created_by?: string;
 }): Promise<TaskWithData | null> {
   const { title, description, status, priority, due_date, assignee_ids, tags, created_by } = params;
+  const actorId = await getCurrentActorId(created_by);
+  if (!actorId) {
+    alert('Create task failed: no authenticated user id');
+    return null;
+  }
 
   // Insert task
   const { data: taskData, error: taskErr } = await supabase.from('tasks').insert({
@@ -135,19 +146,15 @@ export async function createTask(params: {
     status,
     priority,
     due_date: due_date || null,
-    created_by,
-    updated_by: created_by,
+    created_by: actorId,
+    updated_by: actorId,
   }).select().single();
-
-  console.log('DEBUG createTask insert result:', { taskData, taskErr, created_by });
 
   if (taskErr || !taskData) { 
     console.error('createTask:', taskErr); 
     alert(`Create task failed: ${taskErr?.message || 'Unknown error'}`);
     return null; 
   }
-
-  alert(`DEBUG API: task inserted OK | id=${taskData.id}`);
 
   const taskId = taskData.id;
 
@@ -185,9 +192,15 @@ export async function insertLogEntry(params: {
   category: string;
   time_spent?: string;
   file_name?: string;
-  created_by: string;
+  created_by?: string;
 }) {
-  const { data, error } = await supabase.from('log_entries').insert(params).select();
+  const actorId = await getCurrentActorId(params.created_by);
+  if (!actorId) {
+    alert('Add log failed: no authenticated user id');
+    return null;
+  }
+  const { created_by: _ignoredCreatedBy, ...rest } = params;
+  const { data, error } = await supabase.from('log_entries').insert({ ...rest, created_by: actorId }).select();
   if (error) { 
     console.error('insertLogEntry:', error); 
     alert(`Add log failed: ${error?.message || 'Unknown error'}`);
@@ -216,9 +229,15 @@ export async function updateTask(taskId: string, updates: {
   status?: TaskStatus;
   priority?: TaskPriority;
   due_date?: string;
-  updated_by: string;
+  updated_by?: string;
 }): Promise<boolean> {
-  const { error } = await supabase.from('tasks').update(updates).eq('id', taskId);
+  const actorId = await getCurrentActorId(updates.updated_by);
+  if (!actorId) {
+    alert('Update task failed: no authenticated user id');
+    return false;
+  }
+  const { updated_by: _ignoredUpdatedBy, ...rest } = updates;
+  const { error } = await supabase.from('tasks').update({ ...rest, updated_by: actorId }).eq('id', taskId);
   if (error) { console.error('updateTask:', error); return false; }
   return true;
 }
@@ -264,6 +283,4 @@ export async function deleteLogEntry(entryId: string): Promise<boolean> {
 
 // ============ AUTH ============
 
-// Current user fallback for PMC tracker data writes.
-// Existing database rows and seeded relationships depend on this id.
-export const CURRENT_USER_ID = 'a0000001-0000-0000-0000-000000000001';
+

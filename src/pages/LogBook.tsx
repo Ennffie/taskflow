@@ -6,7 +6,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { fetchTasks, fetchLogEntries, insertLogEntry, updateLogEntry, updateTask, fetchProfiles, updateTaskAssignees, deleteLogEntry, deleteTask } from '../lib/api';
 import type { TaskWithData, Profile } from '../lib/api';
 import type { LogEntryRow } from '../lib/api';
-import { CURRENT_USER_ID } from '../lib/api';
 
 interface LogEntryWithProfile extends LogEntryRow {
   created_by_profile?: { id: string; name: string; email: string; role: string };
@@ -122,7 +121,7 @@ export function LogBook() {
           <div className="flex justify-end" style={{ gap: '12px', marginTop: '48px' }}>
             <button onClick={() => setShowEditTask(false)} style={{ padding: '12px 24px', borderRadius: 12, color: 'var(--text-secondary)', fontSize: 14, fontWeight: 500, background: 'transparent', border: 'none', cursor: 'pointer' }}>Cancel</button>
             <button onClick={async () => {
-              await updateTask(task.id, { title: editForm.title, description: editForm.description, status: editForm.status, priority: editForm.priority, updated_by: CURRENT_USER_ID });
+              await updateTask(task.id, { title: editForm.title, description: editForm.description, status: editForm.status, priority: editForm.priority });
               await updateTaskAssignees(task.id, editForm.assigneeIds);
               setShowEditTask(false);
               const tasks = await fetchTasks();
@@ -305,12 +304,11 @@ export function LogBook() {
                     category: form.category,
                     time_spent: form.timeSpent || undefined,
                     file_name: form.fileName || undefined,
-                    created_by: CURRENT_USER_ID,
                   });
                 }
                 // Update task status if changed
                 if (form.status && task) {
-                  await updateTask(task.id, { status: form.status as any, updated_by: CURRENT_USER_ID });
+                  await updateTask(task.id, { status: form.status as any });
                 }
                 setShowForm(false);
                 setEditingLogId(null);

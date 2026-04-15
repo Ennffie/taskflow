@@ -4,7 +4,6 @@ import type { TaskStatus, TaskPriority } from '../types';
 import { STATUS_CONFIG, PRIORITY_CONFIG } from '../types';
 import { fetchProfiles, createTask } from '../lib/api';
 import type { Profile } from '../lib/api';
-import { CURRENT_USER_ID } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 
 interface Props {
@@ -42,13 +41,9 @@ export function NewTaskForm({ onClose, onCreated }: Props) {
   };
 
   const handleSubmit = async () => {
-    if (!title.trim()) {
-      alert('DEBUG: title empty, submit blocked');
-      return;
-    }
+    if (!title.trim()) return;
 
     try {
-      alert(`DEBUG 1: submit triggered | title=${title.trim()} | assignees=${assigneeIds.length}`);
       setSaving(true);
       const tags = tagInput.split(',').map(t => t.trim()).filter(Boolean);
       const result = await createTask({
@@ -59,19 +54,16 @@ export function NewTaskForm({ onClose, onCreated }: Props) {
         due_date: dueDate || undefined,
         assignee_ids: assigneeIds,
         tags,
-        created_by: CURRENT_USER_ID,
       });
-      alert(`DEBUG 2: createTask returned ${result ? 'SUCCESS' : 'NULL'}`);
       setSaving(false);
       if (result) {
-        alert(`DEBUG 3: onCreated start | taskId=${result.id}`);
         onCreated();
       } else {
         console.error('Task creation failed');
       }
     } catch (error: any) {
       setSaving(false);
-      alert(`DEBUG ERROR: ${error?.message || error || 'unknown'}`);
+      alert(`Create task failed: ${error?.message || error || 'unknown'}`);
       console.error('handleSubmit error:', error);
     }
   };
